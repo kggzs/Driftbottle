@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漂流瓶 - 让你的心情随海漂流</title>
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <!-- 公告卡片 -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3 class="mb-0"><i class="fas fa-bullhorn me-2"></i>系统公告</h3>
+                            <div id="announcement-controls">
+                                <button class="btn btn-sm btn-outline-secondary announcement-prev" disabled>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary announcement-next" disabled>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="announcements-container">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-center">欢迎使用漂流瓶</h2>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-center">漂流瓶是一个让你分享心情、结交朋友的平台。</p>
+                            <p class="text-center">将你的心情、秘密或想法写在漂流瓶中，扔向大海，也许会有一个陌生人捡到它。</p>
+                            <p class="text-center">同样，你也可以捡起他人的漂流瓶，读取他们的故事，并给予回应。</p>
+                            
+                            <div class="text-center mt-4">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <a href="throw.html" class="btn btn-primary w-100">
+                                            <i class="fas fa-paper-plane"></i> 扔一个漂流瓶
+                                        </a>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <a href="pick.html" class="btn btn-success w-100">
+                                            <i class="fas fa-search"></i> 捡一个漂流瓶
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3>如何使用漂流瓶</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 text-center mb-3">
+                                    <div class="fs-1 mb-2 text-primary">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                    <h5>注册账号</h5>
+                                    <p>创建一个属于你的账号，选择你的性别</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-3">
+                                    <div class="fs-1 mb-2 text-success">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+                                    <h5>扔漂流瓶</h5>
+                                    <p>写下你的心情，可以选择匿名发送</p>
+                                </div>
+                                <div class="col-md-4 text-center mb-3">
+                                    <div class="fs-1 mb-2 text-info">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <h5>捡漂流瓶</h5>
+                                    <p>阅读他人的故事，给予回应和点赞</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

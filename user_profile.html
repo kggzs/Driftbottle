@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户主页 - 漂流瓶</title>
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <!-- 使用CDN加载Font Awesome -->
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- 添加Bootstrap JS依赖 -->
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <!-- 用户资料卡片 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="text-center">用户主页</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="publicProfileContainer">
+                                <div class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">正在加载用户信息...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户漂流瓶 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4 class="mb-0">Ta的漂流瓶</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="userBottlesContainer">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">正在加载漂流瓶...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <script src="assets/js/app.js"></script>
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            checkAuth(function(isLoggedIn) {
+                if (!isLoggedIn) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // 获取URL中的用户ID参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('id');
+                
+                if (!userId) {
+                    showAlert('未指定用户ID', 'danger');
+                    document.getElementById('publicProfileContainer').innerHTML = '<p class="text-center">无法加载用户信息，请返回首页</p>';
+                    document.getElementById('userBottlesContainer').innerHTML = '<p class="text-center">无法加载漂流瓶</p>';
+                    return;
+                }
+                
+                // 加载用户公开资料
+                loadPublicProfile(userId);
+                
+                // 加载用户的公开漂流瓶
+                loadUserPublicBottles(userId);
+            });
+        });
+        
+        // 加载用户公开资料
+        function loadPublicProfile(userId) {
+            fetch(`api.php/public_profile?user_id=${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('publicProfileContainer');
+                
+                if (data.success) {
+                    const user = data.user;
+                    
+                    // 更新页面标题
+                    document.title = `${user.username}的主页 - 漂流瓶`;
+                    
+                    // 构建用户资料HTML
+                    const html = `
+                        <div class="row">
+                            <div class="col-md-7">
+                                <h3 class="mb-3">
+                                    ${user.username} 
+                                    ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP会员</span>' : ''}
+                                </h3>
+                                <p><strong>性别:</strong> ${user.gender}</p>
+                                <p><strong>注册时间:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                                ${user.signature ? `<p><strong>个性签名:</strong> ${user.signature}</p>` : ''}
+                            </div>
+                            <div class="col-md-5">
+                                <div class="stats border p-3 rounded">
+                                    <p><i class="fas fa-bottle-water text-primary"></i> 扔出瓶子: ${user.bottle_count}</p>
+                                    <p><i class="fas fa-heart text-danger"></i> 收到点赞: ${user.like_count}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<p class="text-center text-danger">${data.message || '加载用户信息失败'}</p>`;
+                }
+            })
+            .catch(error => {
+                Logger.error('Error:', error);
+                showAlert('无法加载用户资料', 'danger');
+            });
+        }
+        
+        // 加载用户的公开漂流瓶
+        function loadUserPublicBottles(userId) {
+            fetch(`api.php/public_bottles?user_id=${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('userBottlesContainer');
+                
+                if (data.success) {
+                    if (data.bottles.length === 0) {
+                        container.innerHTML = '<p class="text-center">该用户还没有扔出过漂流瓶</p>';
+                        return;
+                    }
+                    
+                    // 构建漂流瓶列表HTML
+                    let html = '<div class="bottle-list">';
+                    
+                    data.bottles.forEach(bottle => {
+                        // 格式化时间
+                        const throwTime = new Date(bottle.throw_time).toLocaleString();
+                        
+                        // 获取表情
+                        let moodEmoji = '';
+                        switch (bottle.mood) {
+                            case '开心': moodEmoji = '😊'; break;
+                            case '难过': moodEmoji = '😢'; break;
+                            case '平静': moodEmoji = '😌'; break;
+                            case '愤怒': moodEmoji = '😡'; break;
+                            case '期待': moodEmoji = '🤩'; break;
+                            case '忧郁': moodEmoji = '😔'; break;
+                            default: moodEmoji = '😶';
+                        }
+                        
+                        html += `
+                            <div class="bottle-card p-3 border rounded mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="badge bg-info">${bottle.mood} ${moodEmoji}</span>
+                                    </div>
+                                    <small class="text-muted">${throwTime}</small>
+                                </div>
+                                <div class="bottle-content mb-2">
+                                    <p>${bottle.content}</p>
+                                    ${bottle.signature ? `<p class="text-muted small fst-italic mt-2">——${bottle.signature}</p>` : ''}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small">状态: ${bottle.status}</span>
+                                    <span><i class="fas fa-heart text-danger"></i> ${bottle.likes}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<p class="text-center text-danger">${data.message || '加载漂流瓶失败'}</p>`;
+                }
+            })
+            .catch(error => {
+                Logger.error('Error:', error);
+                showAlert('无法加载漂流瓶列表', 'danger');
+            });
+        }
+    </script>
+</body>
+</html>

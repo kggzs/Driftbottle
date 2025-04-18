@@ -1,0 +1,858 @@
+// 封装API请求函数
+const api = {
+    // 通用请求函数
+    async request(endpoint, method = 'GET', data = null) {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        };
+        
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+        
+        try {
+            const response = await fetch(`api.php/${endpoint}`, options);
+            
+            // 检查响应状态
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // 尝试解析JSON响应
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new TypeError(`Expected JSON response but got ${contentType}`);
+            }
+            
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                Logger.error('JSON解析错误:', e);
+                Logger.error('原始响应:', text);
+                throw new Error('服务器返回的数据格式不正确');
+            }
+        } catch (error) {
+            Logger.error('API请求错误:', error);
+            return { 
+                success: false, 
+                message: error.message || '网络请求失败',
+                error: error
+            };
+        }
+    },
+    
+    // 用户相关
+    async register(username, password, gender) {
+        return await this.request('register', 'POST', { username, password, gender });
+    },
+    
+    async login(username, password) {
+        return await this.request('login', 'POST', { username, password });
+    },
+    
+    async logout() {
+        return await this.request('logout', 'POST');
+    },
+    
+    async checkAuth() {
+        return await this.request('check_auth');
+    },
+    
+    async getUserInfo(userId = null) {
+        const params = userId ? { user_id: userId } : {};
+        return await this.request('user_info', 'GET', params);
+    },
+    
+    // 漂流瓶相关
+    async createBottle(content, isAnonymous = false) {
+        return await this.request('create_bottle', 'POST', { 
+            content, 
+            is_anonymous: isAnonymous ? 1 : 0 
+        });
+    },
+    
+    async pickBottle() {
+        return await this.request('pick_bottle', 'POST');
+    },
+    
+    async commentBottle(bottleId, content) {
+        return await this.request('comment_bottle', 'POST', { bottle_id: bottleId, content });
+    },
+    
+    async likeBottle(bottleId) {
+        return await this.request('like_bottle', 'POST', { bottle_id: bottleId });
+    },
+    
+    async getUserBottles(userId = null) {
+        const params = userId ? { user_id: userId } : {};
+        return await this.request('user_bottles', 'GET', params);
+    },
+    
+    async getUserPickedBottles() {
+        return await this.request('user_picked_bottles', 'GET');
+    },
+    
+    // 获取公告列表
+    async getAnnouncements() {
+        return await this.request('get_announcements', 'GET');
+    }
+};
+
+// 工具函数
+const utils = {
+    // 显示提示消息
+    showAlert(message, type = 'info', container = '.alert-container', autoHide = true) {
+        const alertContainer = document.querySelector(container);
+        if (!alertContainer) return;
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+        
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alertDiv);
+        
+        if (autoHide) {
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+    },
+    
+    // 格式化日期
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
+    
+    // 检查用户是否已登录，如未登录则跳转到登录页
+    async checkLogin() {
+        const response = await api.checkAuth();
+        if (!response.success || !response.loggedIn) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    },
+    
+    // 更新导航栏状态
+    async updateNavBar() {
+        const navbarContainer = document.querySelector('.navbar-nav');
+        if (!navbarContainer) return;
+        
+        const response = await api.checkAuth();
+        
+        navbarContainer.innerHTML = '';
+        
+        if (response.success && response.loggedIn) {
+            // 已登录状态
+            navbarContainer.innerHTML = `
+                <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                <li class="nav-item"><a href="throw.html" class="nav-link">扔漂流瓶</a></li>
+                <li class="nav-item"><a href="pick.html" class="nav-link">捡漂流瓶</a></li>
+                <li class="nav-item"><a href="profile.html" class="nav-link">个人中心</a></li>
+                <li class="nav-item"><a href="#" class="nav-link logout-btn">退出登录</a></li>
+            `;
+            
+            // 绑定退出登录事件
+            document.querySelector('.logout-btn').addEventListener('click', async (e) => {
+                e.preventDefault();
+                const response = await api.logout();
+                if (response.success) {
+                    window.location.href = 'login.html';
+                }
+            });
+        } else {
+            // 未登录状态
+            navbarContainer.innerHTML = `
+                <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                <li class="nav-item"><a href="login.html" class="nav-link">登录</a></li>
+                <li class="nav-item"><a href="register.html" class="nav-link">注册</a></li>
+            `;
+        }
+    }
+};
+
+// 全局用户信息
+window.userInfo = null;
+
+// 检查用户登录状态
+function checkAuth(callback) {
+    fetch('api.php/check_auth')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.loggedIn) {
+            // 保存用户信息到全局变量
+            window.userInfo = {
+                id: data.user_id,
+                username: data.username,
+                gender: data.gender,
+                points: data.points || 0,
+                signature: data.signature || '',
+                unread_messages: data.unread_messages || 0,
+                daily_limits: data.daily_limits || {}
+            };
+            callback(true);
+        } else {
+            callback(false);
+        }
+    })
+    .catch(error => {
+        Logger.error('Auth check error:', error);
+        callback(false);
+    });
+}
+
+// 显示提醒
+function showAlert(message, type = 'success') {
+    const alertContainer = document.querySelector('.alert-container');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    alertContainer.appendChild(alertDiv);
+    
+    // 自动关闭提醒
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 300);
+    }, 3000);
+}
+
+// 初始化导航栏
+function initNavbar() {
+    const navbarNav = document.querySelector('.navbar-nav');
+    
+    if (window.userInfo) {
+        // 用户已登录，显示登录后的导航
+        navbarNav.innerHTML = `
+            <li class="nav-item">
+                <a class="nav-link" href="index.html">首页</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="throw.html">扔漂流瓶</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="pick.html">捡漂流瓶</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="profile.html">个人中心 ${window.userInfo.unread_messages > 0 ? `<span class="badge bg-danger">${window.userInfo.unread_messages}</span>` : ''}</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="logoutBtn">退出</a>
+            </li>
+        `;
+        
+        // 添加退出登录事件
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            fetch('api.php/logout')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.userInfo = null;
+                    window.location.href = 'login.html';
+                }
+            })
+            .catch(error => Logger.error('Logout error:', error));
+        });
+    } else {
+        // 用户未登录，显示登录/注册导航
+        navbarNav.innerHTML = `
+            <li class="nav-item">
+                <a class="nav-link" href="index.html">首页</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="login.html">登录</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="register.html">注册</a>
+            </li>
+        `;
+    }
+}
+
+// 加载用户漂流瓶
+function loadUserBottles() {
+    fetch('api.php/user_bottles')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.querySelector('.bottles-container');
+        
+        if (data.success && data.bottles.length > 0) {
+            // 排序漂流瓶，最新的在前
+            const bottles = data.bottles.sort((a, b) => new Date(b.throw_time) - new Date(a.throw_time));
+            
+            let html = '<div class="row">';
+            bottles.forEach(bottle => {
+                const throwTime = new Date(bottle.throw_time).toLocaleString();
+                const isAnonymous = bottle.is_anonymous == 1 ? '<span class="badge bg-secondary">匿名</span>' : '';
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-info">${bottle.mood || '其他'}</span>
+                                    ${isAnonymous}
+                                </div>
+                                <small class="text-muted">${throwTime}</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${bottle.content}</p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-heart text-danger"></i> ${bottle.like_count || 0} 点赞</span>
+                                    <span><i class="fas fa-comment text-primary"></i> ${bottle.comment_count || 0} 评论</span>
+                                    <span class="badge ${bottle.status === '漂流中' ? 'bg-success' : 'bg-secondary'}">${bottle.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center">
+                    <p>你还没有扔出过漂流瓶，去<a href="throw.html">扔一个</a>吧！</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        Logger.error('Error:', error);
+        document.querySelector('.bottles-container').innerHTML = `
+            <div class="alert alert-danger">
+                加载漂流瓶失败，请稍后再试
+            </div>
+        `;
+    });
+}
+
+// 加载用户捡到的漂流瓶
+function loadUserPickedBottles() {
+    fetch('api.php/user_picked_bottles')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.querySelector('.picked-bottles-container');
+        
+        if (data.success && data.bottles.length > 0) {
+            // 排序漂流瓶，最近捡到的在前
+            const bottles = data.bottles.sort((a, b) => new Date(b.pick_time) - new Date(a.pick_time));
+            
+            let html = '<div class="row">';
+            bottles.forEach(bottle => {
+                const pickTime = new Date(bottle.pick_time).toLocaleString();
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-info">${bottle.mood || '其他'}</span>
+                                    <span class="text-primary">${bottle.username}</span>
+                                </div>
+                                <small class="text-muted">捡到于 ${pickTime}</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${bottle.content}</p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-heart text-danger"></i> ${bottle.like_count || 0} 点赞</span>
+                                    <span><i class="fas fa-comment text-primary"></i> ${bottle.comment_count || 0} 评论</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center">
+                    <p>你还没有捡到过漂流瓶，去<a href="pick.html">捡一个</a>吧！</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        Logger.error('Error:', error);
+        document.querySelector('.picked-bottles-container').innerHTML = `
+            <div class="alert alert-danger">
+                加载捡到的漂流瓶失败，请稍后再试
+            </div>
+        `;
+    });
+}
+
+// 公告系统相关函数
+const announcements = {
+    currentIndex: 0,
+    items: [],
+    
+    async init() {
+        const container = document.getElementById('announcements-container');
+        if (!container) return;
+        
+        try {
+            const response = await api.getAnnouncements();
+            if (response.success && response.announcements.length > 0) {
+                this.items = response.announcements;
+                this.updateDisplay();
+                this.setupControls();
+            } else {
+                container.innerHTML = '<p class="text-center text-muted">暂无公告</p>';
+            }
+        } catch (error) {
+            Logger.error('获取公告失败:', error);
+            container.innerHTML = '<p class="text-center text-danger">获取公告失败</p>';
+        }
+    },
+    
+    updateDisplay() {
+        if (this.items.length === 0) return;
+        
+        const container = document.getElementById('announcements-container');
+        const announcement = this.items[this.currentIndex];
+        
+        container.innerHTML = `
+            <div class="announcement-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="mb-0">
+                        <span class="badge bg-${announcement.type_class} me-2">${announcement.type}</span>
+                        ${announcement.title}
+                    </h4>
+                    <small class="text-muted">${utils.formatDate(announcement.created_at)}</small>
+                </div>
+                <div class="announcement-content">${announcement.content}</div>
+            </div>
+        `;
+        //<div class="text-end mt-2">
+        //<small class="text-muted">发布者：${announcement.creator_name}</small>
+        //</div>
+        // 更新控制按钮状态
+        const prevBtn = document.querySelector('.announcement-prev');
+        const nextBtn = document.querySelector('.announcement-next');
+        
+        if (prevBtn) prevBtn.disabled = this.currentIndex === 0;
+        if (nextBtn) nextBtn.disabled = this.currentIndex === this.items.length - 1;
+    },
+    
+    setupControls() {
+        const prevBtn = document.querySelector('.announcement-prev');
+        const nextBtn = document.querySelector('.announcement-next');
+        
+        if (prevBtn) {
+            prevBtn.disabled = this.currentIndex === 0;
+            prevBtn.addEventListener('click', () => {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.updateDisplay();
+                }
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = this.currentIndex === this.items.length - 1;
+            nextBtn.addEventListener('click', () => {
+                if (this.currentIndex < this.items.length - 1) {
+                    this.currentIndex++;
+                    this.updateDisplay();
+                }
+            });
+        }
+    }
+};
+
+// 在页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 初始化日志工具
+    Logger.init();
+    
+    // 更新导航栏
+    utils.updateNavBar();
+    
+    // 初始化公告系统
+    announcements.init();
+    
+    // 注册页面初始化
+    if (document.querySelector('#registerForm')) {
+        initRegisterPage();
+    }
+    
+    // 登录页面初始化
+    if (document.querySelector('#loginForm')) {
+        initLoginPage();
+    }
+    
+    // 扔漂流瓶页面初始化
+    if (document.querySelector('#throwBottleForm')) {
+        initThrowBottlePage();
+    }
+    
+    // 捡漂流瓶页面初始化
+    if (document.querySelector('#pickBottleBtn')) {
+        initPickBottlePage();
+    }
+    
+    // 个人中心页面初始化
+    if (document.querySelector('.profile-container')) {
+        initProfilePage();
+    }
+});
+
+// 初始化注册页面
+function initRegisterPage() {
+    const registerForm = document.getElementById('registerForm');
+    
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const gender = document.querySelector('input[name="gender"]:checked')?.value;
+        
+        // 简单验证
+        if (!username || !password || !confirmPassword || !gender) {
+            utils.showAlert('请填写所有字段', 'danger');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            utils.showAlert('两次输入的密码不一致', 'danger');
+            return;
+        }
+        
+        // 发送注册请求
+        const response = await api.register(username, password, gender);
+        
+        if (response.success) {
+            utils.showAlert('注册成功，即将跳转到登录页面', 'success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        } else {
+            utils.showAlert(response.message || '注册失败，请稍后再试', 'danger');
+        }
+    });
+}
+
+// 初始化登录页面
+function initLoginPage() {
+    const loginForm = document.getElementById('loginForm');
+    
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        // 简单验证
+        if (!username || !password) {
+            utils.showAlert('请填写用户名和密码', 'danger');
+            return;
+        }
+        
+        // 发送登录请求
+        const response = await api.login(username, password);
+        
+        if (response.success) {
+            utils.showAlert('登录成功，即将跳转到首页', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        } else {
+            utils.showAlert(response.message || '登录失败，请检查用户名和密码', 'danger');
+        }
+    });
+}
+
+// 初始化扔漂流瓶页面
+async function initThrowBottlePage() {
+    // 检查登录状态
+    if (!(await utils.checkLogin())) return;
+    
+    const throwBottleForm = document.getElementById('throwBottleForm');
+    
+    throwBottleForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const content = document.getElementById('bottleContent').value;
+        const isAnonymous = document.getElementById('isAnonymous').checked;
+        
+        // 简单验证
+        if (!content) {
+            utils.showAlert('请输入漂流瓶内容', 'danger');
+            return;
+        }
+        
+        // 发送创建漂流瓶请求
+        const response = await api.createBottle(content, isAnonymous);
+        
+        if (response.success) {
+            utils.showAlert('漂流瓶已成功扔出', 'success');
+            document.getElementById('bottleContent').value = '';
+            document.getElementById('isAnonymous').checked = false;
+        } else {
+            utils.showAlert(response.message || '扔漂流瓶失败，请稍后再试', 'danger');
+        }
+    });
+}
+
+// 初始化捡漂流瓶页面
+async function initPickBottlePage() {
+    // 检查登录状态
+    if (!(await utils.checkLogin())) return;
+    
+    const pickBottleBtn = document.getElementById('pickBottleBtn');
+    const bottleContainer = document.querySelector('.bottle-container');
+    
+    // 防止重复绑定事件
+    if (pickBottleBtn && !pickBottleBtn.hasAttribute('data-init')) {
+        // 标记按钮已初始化
+        pickBottleBtn.setAttribute('data-init', 'true');
+        
+        pickBottleBtn.addEventListener('click', async () => {
+            // 禁用按钮防止重复点击
+            pickBottleBtn.disabled = true;
+            pickBottleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在寻找漂流瓶...';
+            bottleContainer.innerHTML = '<div class="text-center"><p>正在寻找漂流瓶...</p></div>';
+            
+            try {
+                const response = await api.pickBottle();
+                
+                if (response.success && response.bottle) {
+                    const bottle = response.bottle;
+                    
+                    // 调用页面上的 displayBottle 函数显示漂流瓶内容
+                    if (typeof displayBottle === 'function') {
+                        displayBottle(bottle);
+                    } else {
+                        // 如果没有页面自定义的 displayBottle 函数，使用默认实现
+                        const genderClass = bottle.gender === '男' ? 'bottle-male' : 'bottle-female';
+                        
+                        let commentsHtml = '';
+                        if (bottle.comments && bottle.comments.length > 0) {
+                            commentsHtml = `
+                                <div class="comments">
+                                    <h5>历史评论 (${bottle.comments.length})</h5>
+                                    ${bottle.comments.map(comment => `
+                                        <div class="comment">
+                                            <div class="comment-header">
+                                                <span class="comment-author ${comment.gender === '男' ? 'comment-male' : 'comment-female'}">
+                                                    ${comment.username}
+                                                </span>
+                                                <span class="comment-time">${utils.formatDate(comment.created_at)}</span>
+                                            </div>
+                                            <div class="comment-content">${comment.content}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        }
+                        
+                        bottleContainer.innerHTML = `
+                            <div class="bottle ${genderClass}" data-id="${bottle.id}">
+                                <div class="bottle-header">
+                                    <span class="bottle-author">${bottle.username}</span>
+                                    <span class="bottle-time">${utils.formatDate(bottle.throw_time)}</span>
+                                </div>
+                                <div class="bottle-content">${bottle.content}</div>
+                                <div class="bottle-actions">
+                                    <div>
+                                        <button class="btn ${bottle.has_liked ? 'btn-danger' : 'btn-outline-danger'} like-btn" onclick="likeBottle(${bottle.id}, this)">
+                                            <i class="fas fa-heart"></i> <span class="like-count">${bottle.like_count || 0}</span> 点赞
+                                        </button>
+                                    </div>
+                                    <div class="comment-section">
+                                        <textarea id="commentContent" class="form-control mb-2" placeholder="写下你的评论..."></textarea>
+                                        <button class="btn btn-primary submit-comment-btn">评论并扔回大海</button>
+                                    </div>
+                                    ${commentsHtml}
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 绑定提交评论事件
+                        document.querySelector('.submit-comment-btn').addEventListener('click', async function() {
+                            const bottleId = document.querySelector('.bottle').dataset.id;
+                            const content = document.getElementById('commentContent').value;
+                            
+                            if (!content) {
+                                utils.showAlert('请输入评论内容', 'danger');
+                                return;
+                            }
+                            
+                            const response = await api.commentBottle(bottleId, content);
+                            
+                            if (response.success) {
+                                utils.showAlert('评论成功，漂流瓶已重新扔回大海', 'success');
+                                bottleContainer.innerHTML = '';
+                                // 重新启用捡瓶按钮
+                                pickBottleBtn.disabled = false;
+                                pickBottleBtn.innerHTML = '<i class="fas fa-search"></i> 随机捡一个漂流瓶';
+                            } else {
+                                utils.showAlert(response.message || '评论失败，请稍后再试', 'danger');
+                            }
+                        });
+                    }
+                    
+                    // 调用页面上的 updatePickedCount 函数更新已捡起的瓶子数量
+                    if (typeof updatePickedCount === 'function') {
+                        updatePickedCount();
+                    }
+                    
+                    // 更新剩余次数
+                    if (typeof getDailyLimits === 'function') {
+                        getDailyLimits();
+                    }
+                } else {
+                    bottleContainer.innerHTML = `
+                        <div class="text-center">
+                            <p>${response.message || '暂时没有可捡起的漂流瓶，请稍后再试'}</p>
+                        </div>
+                    `;
+                    // 重新启用捡瓶按钮
+                    pickBottleBtn.disabled = false;
+                    pickBottleBtn.innerHTML = '<i class="fas fa-search"></i> 随机捡一个漂流瓶';
+                }
+            } catch (error) {
+                Logger.error('Error:', error);
+                bottleContainer.innerHTML = '<div class="text-center"><p>捡瓶失败，请稍后再试</p></div>';
+                pickBottleBtn.disabled = false;
+                pickBottleBtn.innerHTML = '<i class="fas fa-search"></i> 随机捡一个漂流瓶';
+            }
+        });
+    }
+}
+
+// 初始化个人中心页面
+async function initProfilePage() {
+    // 检查登录状态
+    if (!(await utils.checkLogin())) return;
+    
+    const profileContainer = document.querySelector('.profile-container');
+    const bottlesContainer = document.querySelector('.bottles-container');
+    const pickedBottlesContainer = document.querySelector('.picked-bottles-container');
+    
+    // 获取用户信息
+    const userResponse = await api.getUserInfo();
+    
+    if (userResponse.success && userResponse.user) {
+        const user = userResponse.user;
+        const genderClass = user.gender === '男' ? '' : 'female';
+        
+        // 更新个人资料
+        profileContainer.innerHTML = `
+            <div class="profile-header">
+                <div class="profile-avatar ${genderClass}">${user.username.charAt(0).toUpperCase()}</div>
+                <h2 class="profile-username">${user.username}</h2>
+                <p>性别: ${user.gender} · 注册时间: ${utils.formatDate(user.created_at)}</p>
+            </div>
+            
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-value">${user.bottle_count}</div>
+                    <div class="stat-label">扔出的漂流瓶</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${user.like_count}</div>
+                    <div class="stat-label">收到的点赞</div>
+                </div>
+            </div>
+        `;
+    } else {
+        profileContainer.innerHTML = '<div class="alert alert-danger">加载用户信息失败</div>';
+    }
+    
+    // 获取用户扔出的漂流瓶
+    const bottlesResponse = await api.getUserBottles();
+    
+    if (bottlesResponse.success && bottlesResponse.bottles) {
+        if (bottlesResponse.bottles.length === 0) {
+            bottlesContainer.innerHTML = '<div class="text-center"><p>你还没有扔出过漂流瓶</p></div>';
+        } else {
+            bottlesContainer.innerHTML = bottlesResponse.bottles.map(bottle => `
+                <div class="bottle">
+                    <div class="bottle-header">
+                        <span class="bottle-author">${bottle.is_anonymous == 1 ? '匿名' : '你'}</span>
+                        <span class="bottle-time">${utils.formatDate(bottle.throw_time)}</span>
+                    </div>
+                    <div class="bottle-content">${bottle.content}</div>
+                    <div class="bottle-actions">
+                        <div>
+                            <span class="bottle-btn">
+                                <i class="fas fa-heart"></i> ${bottle.like_count} 点赞
+                            </span>
+                            <span class="bottle-btn">
+                                <i class="fas fa-comment"></i> ${bottle.comment_count} 评论
+                            </span>
+                        </div>
+                        <div>
+                            <span class="bottle-status">${bottle.status}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } else {
+        bottlesContainer.innerHTML = '<div class="alert alert-danger">加载漂流瓶失败</div>';
+    }
+    
+    // 获取用户捡到的漂流瓶
+    const pickedBottlesResponse = await api.getUserPickedBottles();
+    
+    if (pickedBottlesResponse.success && pickedBottlesResponse.bottles) {
+        if (pickedBottlesResponse.bottles.length === 0) {
+            pickedBottlesContainer.innerHTML = '<div class="text-center"><p>你还没有捡到过漂流瓶</p></div>';
+        } else {
+            pickedBottlesContainer.innerHTML = pickedBottlesResponse.bottles.map(bottle => {
+                const genderClass = bottle.gender === '男' ? 'bottle-male' : 'bottle-female';
+                
+                return `
+                    <div class="bottle ${genderClass}">
+                        <div class="bottle-header">
+                            <span class="bottle-author">${bottle.username}</span>
+                            <span class="bottle-time">捡到时间: ${utils.formatDate(bottle.pick_time)}</span>
+                        </div>
+                        <div class="bottle-content">${bottle.content}</div>
+                        <div class="bottle-actions">
+                            <div>
+                                <span class="bottle-btn">
+                                    <i class="fas fa-heart"></i> ${bottle.like_count} 点赞
+                                </span>
+                                <span class="bottle-btn">
+                                    <i class="fas fa-comment"></i> ${bottle.comment_count} 评论
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } else {
+        pickedBottlesContainer.innerHTML = '<div class="alert alert-danger">加载捡到的漂流瓶失败</div>';
+    }
+} 

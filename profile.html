@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 漂流瓶</title>
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- 添加Bootstrap JS依赖 -->
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <!-- 添加日志工具类 -->
+    <script src="assets/js/utils.js"></script>
+    <style>
+        /* 提示消息样式 */
+        .alert-container {
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        .alert-container .alert {
+            pointer-events: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 576px) {
+            .alert-container .alert {
+                max-width: 90%;
+                width: 90%;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container" id="alertContainer"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-10 offset-md-1">
+                    <!-- 个人资料部分 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="text-center">个人资料</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="profile-container">
+                                <!-- 用户信息将在这里动态生成 -->
+                                <div class="text-center">
+                                    <p>正在加载个人资料...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- VIP会员升级模块 -->
+                            <div class="vip-container card mb-4">
+                                <div class="card-header bg-warning text-dark">
+                                    <h4><i class="fas fa-crown"></i> VIP会员特权</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="vip-benefits mb-4">
+                                        <h5>会员特权：</h5>
+                                        <ul>
+                                            <li>查看完整IP地址和地理位置信息</li>
+                                            <li>每日签到获得额外积分</li>
+                                            <li>每日扔瓶和捡瓶次数大幅提高（每天重置）</li>
+                                            <li>专属VIP标识，让你更加醒目</li>
+                                            <li>所有特权每天自动刷新，无使用次数限制</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-12">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-coins text-warning"></i> 您当前积分: <span id="userPointsForVip" class="fw-bold">--</span>
+                                                <div class="mt-2 small">使用积分开通VIP会员，积分可通过每日签到、扔漂流瓶、收到点赞等方式获得</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-info-circle"></i> VIP特权说明：
+                                        <ul class="mb-0 small">
+                                            <li>普通用户每天可扔5个瓶子、捡5个瓶子</li>
+                                            <li>VIP用户每天可扔20个瓶子、捡20个瓶子</li>
+                                            <li>所有次数限制在每天0点自动刷新</li>
+                                            <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="vip-status">
+                                        <h5 class="mb-3">选择开通时长：</h5>
+                                        <div class="row">
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="1" data-points="100">
+                                                    <div>1个月</div>
+                                                    <div><i class="fas fa-coins"></i> 100积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="3" data-points="250">
+                                                    <div>3个月</div>
+                                                    <div><i class="fas fa-coins"></i> 250积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="6" data-points="450">
+                                                    <div>6个月</div>
+                                                    <div><i class="fas fa-coins"></i> 450积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="12" data-points="800">
+                                                    <div>12个月</div>
+                                                    <div><i class="fas fa-coins"></i> 800积分</div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="currentVipStatus" class="mt-4 text-center">
+                                            <!-- VIP状态将在这里动态显示 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 个性签名设置 -->
+                            <div class="signature-container mt-4">
+                                <h4>个性签名</h4>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="signatureInput" placeholder="设置你的个性签名...">
+                                    <button class="btn btn-primary" id="updateSignatureBtn">保存</button>
+                                </div>
+                                <small class="text-muted">个性签名会显示在你的漂流瓶上，让捡到瓶子的人更了解你</small>
+                            </div>
+                            
+                            <!-- 签到模块 -->
+                            <div class="checkin-container mt-4">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h4 class="mb-0">每日签到</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-7">
+                                                <div class="checkin-status">
+                                                    <p>连续签到: <span id="consecutiveDays">--</span> 天</p>
+                                                    <p>本月签到: <span id="monthlyCheckins">--</span> 天</p>
+                                                    <p>签到可获得<strong>1</strong>积分，连续签到7天额外奖励<strong>7</strong>积分！</p>
+                                                    <p id="vipCheckinBonus" class="d-none text-warning">
+                                                        <i class="fas fa-crown"></i> VIP会员每次签到额外获得<strong>2</strong>积分！
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5 text-center">
+                                                <button class="btn btn-success btn-lg" id="checkinBtn">
+                                                    <i class="fas fa-calendar-check"></i> 今日签到
+                                                </button>
+                                                <div id="checkinCompleted" class="mt-2 d-none">
+                                                    <span class="badge bg-success"><i class="fas fa-check"></i> 今日已签到</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 消息中心 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3>我的消息 <span class="badge bg-danger" id="unreadBadge">0</span></h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="messages-container">
+                                <!-- 用户消息将在这里动态生成 -->
+                                <div class="text-center" id="loadingMessages">
+                                    <p>正在加载消息...</p>
+                                </div>
+                                <div id="messagesList"></div>
+                                <div class="text-center d-none" id="noMessages">
+                                    <p>暂无消息</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 我的漂流瓶部分 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3>我扔出的漂流瓶</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="bottles-container">
+                                <!-- 用户的漂流瓶将在这里动态生成 -->
+                                <div class="text-center">
+                                    <p>正在加载我的漂流瓶...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 我捡到的漂流瓶部分 -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>我捡到的漂流瓶</h3>
+                            <button id="clearCommentedBottles" class="btn btn-outline-secondary btn-sm" title="重新显示所有漂流瓶，包括已评论过的">
+                                <i class="fas fa-sync-alt"></i> 显示全部漂流瓶
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="picked-bottles-container">
+                                <!-- 用户捡到的漂流瓶将在这里动态生成 -->
+                                <div class="text-center">
+                                    <p>正在加载捡到的漂流瓶...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <!-- 评论模态框 -->
+    <div class="modal fade" id="commentModal" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="commentModalLabel">评论漂流瓶并扔回大海</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="commentBottleId">
+                    <div class="mb-3">
+                        <label for="commentContent" class="form-label">评论内容</label>
+                        <textarea class="form-control" id="commentContent" rows="3" placeholder="写下你的评论..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="commentSubmitBtn">评论并扔回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="assets/js/app.js"></script>
+    <script>
+        // 通过API获取漂流瓶发送者信息
+        function fetchBottleUserInfo(bottleId) {
+            return new Promise((resolve, reject) => {
+                // 检查是否已有缓存的用户信息
+                if (window.bottleUserCache && window.bottleUserCache[bottleId]) {
+                    resolve(window.bottleUserCache[bottleId]);
+                    return;
+                }
+                
+                // 如果没有缓存，则请求API
+                fetch(`api.php?action=get_bottle_info&id=${bottleId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('网络请求失败');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success && data.bottle) {
+                            // 缓存用户信息
+                            if (!window.bottleUserCache) {
+                                window.bottleUserCache = {};
+                            }
+                            window.bottleUserCache[bottleId] = {
+                                userId: data.bottle.user_id,
+                                username: data.bottle.username,
+                                isAnonymous: data.bottle.is_anonymous
+                            };
+                            resolve(window.bottleUserCache[bottleId]);
+                        } else {
+                            reject(new Error(data.message || '获取漂流瓶信息失败'));
+                        }
+                    })
+                    .catch(error => {
+                        Logger.error('获取漂流瓶信息失败:', error);
+                        reject(error);
+                    });
+            });
+        }
+
+        // 手动为现有漂流瓶添加评论按钮
+        function addCommentButtonsToExistingBottles() {
+            Logger.log("检查现有漂流瓶并添加评论按钮");
+            const pickedBottlesContainer = document.querySelector('.picked-bottles-container');
+            const existingBottles = pickedBottlesContainer.querySelectorAll('.bottle');
+            
+            Logger.log("找到现有漂流瓶数量:", existingBottles.length);
+            
+            existingBottles.forEach((bottleDiv, index) => {
+                // 检查是否已经有评论按钮
+                if (bottleDiv.querySelector('.comment-btn')) {
+                    Logger.log(`第${index+1}个漂流瓶已有评论按钮`);
+                    return;
+                }
+                
+                // 获取漂流瓶ID (如果没有，添加一个唯一标识)
+                let bottleId = bottleDiv.getAttribute('data-bottle-id');
+                if (!bottleId) {
+                    // 从HTML内容中尝试提取ID
+                    const contentText = bottleDiv.textContent;
+                    const matchResult = contentText.match(/ID:(\d+)/);
+                    if (matchResult && matchResult[1]) {
+                        bottleId = matchResult[1];
+                        bottleDiv.setAttribute('data-bottle-id', bottleId);
+                    } else {
+                        Logger.warn(`无法获取第${index+1}个漂流瓶的ID，将跳过添加评论按钮`);
+                        return; // 如果无法获取有效ID，跳过添加按钮
+                    }
+                }
+                
+                Logger.log(`为第${index+1}个漂流瓶(ID:${bottleId})添加评论按钮`);
+                
+                // 检查bottle-actions是否存在
+                let actionsDiv = bottleDiv.querySelector('.bottle-actions');
+                if (!actionsDiv) {
+                    // 如果不存在，创建一个
+                    actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'bottle-actions';
+                    bottleDiv.appendChild(actionsDiv);
+                }
+                
+                // 检查用户名是否能点击，如果不能则修改
+                const authorElement = bottleDiv.querySelector('.bottle-author');
+                if (authorElement && !authorElement.querySelector('a')) {
+                    // 获取用户名文本
+                    const username = authorElement.textContent.trim();
+                    // 从数据属性中尝试获取用户ID和匿名状态
+                    let userId = bottleDiv.getAttribute('data-user-id');
+                    let isAnonymous = bottleDiv.getAttribute('data-is-anonymous') === '1';
+                    
+                    // 如果没有直接的data属性，尝试从页面内容中提取
+                    if (!userId || isAnonymous === undefined) {
+                        // 尝试从页面元素中查找可能包含用户ID的内容
+                        const bottleHeaderText = bottleDiv.querySelector('.bottle-header').textContent;
+                        const userIdMatch = bottleHeaderText.match(/用户ID[：:]\s*(\d+)/);
+                        if (userIdMatch && userIdMatch[1]) {
+                            userId = userIdMatch[1];
+                            bottleDiv.setAttribute('data-user-id', userId);
+                        } else {
+                            // 如果还是没有找到，通过API查询
+                            fetchBottleUserInfo(bottleId)
+                                .then(userInfo => {
+                                    bottleDiv.setAttribute('data-user-id', userInfo.userId);
+                                    // 仅当用户不是匿名时添加链接
+                                    if (!userInfo.isAnonymous) {
+                                        authorElement.innerHTML = `<a href="user_profile.html?id=${userInfo.userId}" class="text-primary">${username}</a>`;
+                                    }
+                                })
+                                .catch(error => {
+                                    Logger.error(`获取漂流瓶${bottleId}的用户信息失败:`, error);
+                                });
+                            // 因为是异步请求，这里先跳过后续的用户名链接处理
+                            // 在API回调中会处理
+                            return;
+                        }
+                    }
+                    
+                    // 只有非匿名用户才添加链接
+                    if (userId && !isAnonymous) {
+                        // 替换为可点击的链接
+                        authorElement.innerHTML = `<a href="user_profile.html?id=${userId}" class="text-primary">${username}</a>`;
+                    }
+                }
+                
+                // 创建评论按钮容器
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'mt-3';
+                btnContainer.innerHTML = `
+                    <button class="btn btn-primary comment-btn w-100 py-2" data-bottle-id="${bottleId}" 
+                        style="font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        <i class="fas fa-paper-plane"></i> 评论并扔回大海
+                    </button>
+                `;
+                actionsDiv.appendChild(btnContainer);
+                
+                // 绑定评论按钮事件
+                const commentBtn = btnContainer.querySelector('.comment-btn');
+                if (commentBtn && !commentBtn.hasEventListener) {
+                    commentBtn.hasEventListener = true;
+                    commentBtn.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        Logger.log("点击了手动添加的评论按钮，漂流瓶ID:", bottleId);
+                        document.getElementById('commentBottleId').value = bottleId;
+                        
+                        // 手动显示模态框
+                        if (window.commentModalInstance) {
+                            window.commentModalInstance.show();
+                            Logger.log("手动打开模态框");
+                        } else {
+                            Logger.log("创建新的模态框实例");
+                            const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+                            modal.show();
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 使用MutationObserver监听DOM变化，当漂流瓶添加到页面时自动添加评论按钮
+        function setupMutationObserver() {
+            Logger.log("设置MutationObserver监听DOM变化");
+            const pickedBottlesContainer = document.querySelector('.picked-bottles-container');
+            
+            // 创建一个观察器实例
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        Logger.log("检测到DOM变化，新增节点数:", mutation.addedNodes.length);
+                        
+                        // 检查是否有新增的漂流瓶元素
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1 && (node.classList.contains('bottle') || node.querySelector('.bottle'))) {
+                                Logger.log("检测到新增漂流瓶元素，添加评论按钮");
+                                // 延迟一点时间确保DOM完全更新
+                                setTimeout(addCommentButtonsToExistingBottles, 200);
+                            }
+                        });
+                    }
+                });
+            });
+            
+            // 配置观察选项
+            const config = { childList: true, subtree: true };
+            
+            // 开始观察目标节点
+            if (pickedBottlesContainer) {
+                observer.observe(pickedBottlesContainer, config);
+                Logger.log("MutationObserver已设置");
+            } else {
+                Logger.error("找不到漂流瓶容器，无法设置MutationObserver");
+            }
+        }
+        
+        // 加载用户资料
+        function loadUserProfile() {
+            fetch('api.php?action=user_info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const user = data.user;
+                        
+                        // 更新全局用户信息
+                        window.userInfo = {
+                            ...window.userInfo,
+                            id: user.id,
+                            username: user.username,
+                            gender: user.gender,
+                            points: user.points,
+                            signature: user.signature || '',
+                            bottle_count: user.bottle_count,
+                            like_count: user.like_count,
+                            is_vip: user.is_vip || 0,
+                            vip_level: user.vip_level || 0,
+                            vip_expire_date: user.vip_expire_date || null
+                        };
+                        
+                        // 更新签名输入框
+                        document.getElementById('signatureInput').value = user.signature || '';
+                        
+                        // 更新VIP显示和积分
+                        if (user.is_vip) {
+                            document.getElementById('vipCheckinBonus').classList.remove('d-none');
+                        }
+                        document.getElementById('userPointsForVip').textContent = user.points;
+                        
+                        // 创建个人资料显示
+                        const profileHtml = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4>${user.username} ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP会员</span>' : ''}</h4>
+                                    <p>性别: ${user.gender}</p>
+                                    <p>注册时间: ${new Date(user.created_at).toLocaleString()}</p>
+                                    ${user.signature ? `<p>个性签名: ${user.signature}</p>` : ''}
+                                    ${user.is_vip ? `<p class="text-warning">VIP到期时间: ${new Date(user.vip_expire_date).toLocaleDateString()}</p>` : ''}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="stats">
+                                        <p><i class="fas fa-coins text-warning"></i> 积分: <span id="userPoints">${user.points}</span></p>
+                                        <p><i class="fas fa-bottle-water text-primary"></i> 扔出瓶子: ${user.bottle_count}</p>
+                                        <p><i class="fas fa-heart text-danger"></i> 收到点赞: ${user.like_count}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.querySelector('.profile-container').innerHTML = profileHtml;
+                        
+                        Logger.log("用户资料加载成功", window.userInfo);
+                        
+                        // 如果用户资料中包含签到状态，直接使用
+                        if (user.checkin_status) {
+                            Logger.log("从用户资料中获取签到状态:", user.checkin_status);
+                            
+                            // 更新连续签到天数
+                            const consecutiveDaysElement = document.getElementById('consecutiveDays');
+                            if (consecutiveDaysElement) {
+                                consecutiveDaysElement.textContent = user.checkin_status.consecutive_days;
+                            }
+                            
+                            const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+                            if (monthlyCheckinsElement) {
+                                monthlyCheckinsElement.textContent = user.checkin_status.monthly_checkins;
+                            }
+                            
+                            // 如果今天已经签到，禁用签到按钮
+                            const checkinBtn = document.getElementById('checkinBtn');
+                            const checkinCompleted = document.getElementById('checkinCompleted');
+                            
+                            if (user.checkin_status.has_checked_today) {
+                                Logger.log("用户今日已签到");
+                                if (checkinBtn) {
+                                    checkinBtn.disabled = true;
+                                    checkinBtn.innerHTML = '今日已签到';
+                                }
+                                
+                                if (checkinCompleted) {
+                                    checkinCompleted.classList.remove('d-none');
+                                }
+                            } else {
+                                Logger.log("用户今日未签到");
+                                if (checkinBtn) {
+                                    checkinBtn.disabled = false;
+                                    checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                                }
+                                
+                                if (checkinCompleted) {
+                                    checkinCompleted.classList.add('d-none');
+                                }
+                            }
+                        } else {
+                            // 如果没有签到状态，调用签到状态API
+                            Logger.log("用户资料中无签到状态，将单独请求签到状态");
+                            loadCheckinStatus();
+                        }
+                    } else {
+                        showAlert(data.message || '加载用户资料失败', 'danger');
+                    }
+                })
+                .catch(error => {
+                    Logger.error('Error:', error);
+                    showAlert('加载个人资料失败', 'danger');
+                });
+        }
+        
+        // 加载签到状态
+        function loadCheckinStatus() {
+            Logger.log("正在加载签到状态...");
+            
+            try {
+                fetch('api.php?action=get_checkin_status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    Logger.log("签到状态数据:", data);
+                    
+                    if (data.success) {
+                        // 更新连续签到天数
+                        const consecutiveDaysElement = document.getElementById('consecutiveDays');
+                        if (consecutiveDaysElement) {
+                            consecutiveDaysElement.textContent = data.consecutive_days;
+                        }
+                        
+                        const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+                        if (monthlyCheckinsElement) {
+                            monthlyCheckinsElement.textContent = data.monthly_checkins;
+                        }
+                        
+                        // 如果今天已经签到，禁用签到按钮
+                        const checkinBtn = document.getElementById('checkinBtn');
+                        const checkinCompleted = document.getElementById('checkinCompleted');
+                        
+                        if (data.has_checked_today) {
+                            Logger.log("用户今日已签到，禁用签到按钮");
+                            if (checkinBtn) {
+                                checkinBtn.disabled = true;
+                                checkinBtn.innerHTML = '今日已签到';
+                            }
+                            
+                            if (checkinCompleted) {
+                                checkinCompleted.classList.remove('d-none');
+                            }
+                        } else {
+                            Logger.log("用户今日未签到，启用签到按钮");
+                            if (checkinBtn) {
+                                checkinBtn.disabled = false;
+                                checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                            }
+                            
+                            if (checkinCompleted) {
+                                checkinCompleted.classList.add('d-none');
+                            }
+                        }
+                    } else {
+                        Logger.error("获取签到状态失败:", data.message);
+                        // 出错时默认为未签到状态
+                        const checkinBtn = document.getElementById('checkinBtn');
+                        if (checkinBtn) {
+                            checkinBtn.disabled = false;
+                            checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                        }
+                        
+                        const checkinCompleted = document.getElementById('checkinCompleted');
+                        if (checkinCompleted) {
+                            checkinCompleted.classList.add('d-none');
+                        }
+                    }
+                })
+                .catch(error => {
+                    Logger.error('获取签到状态出错:', error);
+                    // 出错时默认为未签到状态
+                    const checkinBtn = document.getElementById('checkinBtn');
+                    if (checkinBtn) {
+                        checkinBtn.disabled = false;
+                        checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                    }
+                    
+                    const checkinCompleted = document.getElementById('checkinCompleted');
+                    if (checkinCompleted) {
+                        checkinCompleted.classList.add('d-none');
+                    }
+                });
+            } catch (error) {
+                Logger.error('loadCheckinStatus 异常:', error);
+                // 异常时默认为未签到状态
+                const checkinBtn = document.getElementById('checkinBtn');
+                if (checkinBtn) {
+                    checkinBtn.disabled = false;
+                    checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                }
+                
+                const checkinCompleted = document.getElementById('checkinCompleted');
+                if (checkinCompleted) {
+                    checkinCompleted.classList.add('d-none');
+                }
+            }
+        }
+        
+        // 加载用户漂流瓶
+        function loadUserBottles() {
+            fetch('api.php?action=user_bottles')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.bottles && data.bottles.length > 0) {
+                        const container = document.querySelector('.bottles-container');
+                        container.innerHTML = '';
+                        
+                        data.bottles.forEach(bottle => {
+                            const genderClass = window.userInfo && window.userInfo.gender === '男' ? 'bottle-male' : 'bottle-female';
+                            const createTime = new Date(bottle.throw_time).toLocaleString();
+                            
+                            const bottleHtml = `
+                                <div class="bottle ${genderClass}">
+                                    <div class="bottle-header">
+                                        <span class="bottle-time">${createTime}</span>
+                                    </div>
+                                    <div class="bottle-content">${bottle.content}</div>
+                                    <div class="bottle-actions">
+                                        <span class="bottle-btn">
+                                            <i class="fas fa-heart"></i> ${bottle.like_count || 0} 点赞
+                                        </span>
+                                        <span class="bottle-btn">
+                                            <i class="fas fa-comment"></i> ${bottle.comment_count || 0} 评论
+                                        </span>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            container.innerHTML += bottleHtml;
+                        });
+                    } else {
+                        document.querySelector('.bottles-container').innerHTML = `
+                            <div class="text-center">
+                                <p>你还没有扔出过漂流瓶，去<a href="create.html">扔一个</a>吧！</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    Logger.error('Error:', error);
+                    document.querySelector('.bottles-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            加载漂流瓶失败，请稍后再试
+                        </div>
+                    `;
+                });
+        }
+        
+        // 加载用户捡到的漂流瓶
+        function loadUserPickedBottles() {
+            Logger.log("开始加载用户捡到的漂流瓶...");
+            fetch('api.php?action=user_picked_bottles')
+                .then(response => response.json())
+                .then(data => {
+                    Logger.log("捡到的漂流瓶数据:", data);
+                    const container = document.querySelector('.picked-bottles-container');
+                    container.innerHTML = ''; // 先清空容器，避免重复加载
+                    
+                    if (data.success && data.bottles && data.bottles.length > 0) {
+                        // 获取已评论的漂流瓶ID列表
+                        let commentedBottleIds = [];
+                        try {
+                            const storedIds = localStorage.getItem('commentedBottleIds');
+                            if (storedIds) {
+                                commentedBottleIds = JSON.parse(storedIds);
+                            }
+                        } catch (e) {
+                            Logger.error("解析本地存储的已评论漂流瓶ID失败:", e);
+                            commentedBottleIds = [];
+                        }
+                        
+                        Logger.log("已评论的漂流瓶ID列表:", commentedBottleIds);
+                        
+                        // 过滤掉已评论的漂流瓶
+                        const filteredBottles = data.bottles.filter(bottle => !commentedBottleIds.includes(String(bottle.id)));
+                        
+                        // 排序漂流瓶，最近捡到的在前
+                        const bottles = filteredBottles.sort((a, b) => new Date(b.pick_time) - new Date(a.pick_time));
+                        Logger.log("过滤并排序后的漂流瓶:", bottles, "总数:", bottles.length);
+                        
+                        if (bottles.length === 0) {
+                            container.innerHTML = `
+                                <div class="text-center">
+                                    <p>你没有未评论的漂流瓶，去<a href="pick.html">捡一个</a>吧！</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        bottles.forEach(bottle => {
+                            const genderClass = bottle.gender === '男' ? 'bottle-male' : 'bottle-female';
+                            const pickTime = new Date(bottle.pick_time).toLocaleString();
+                            
+                            // 创建漂流瓶元素
+                            const bottleDiv = document.createElement('div');
+                            bottleDiv.className = `bottle ${genderClass}`;
+                            bottleDiv.setAttribute('data-bottle-id', bottle.id); // 添加bottle-id属性
+                            bottleDiv.setAttribute('data-user-id', bottle.user_id); // 添加用户ID属性
+                            bottleDiv.setAttribute('data-is-anonymous', bottle.is_anonymous ? '1' : '0'); // 添加是否匿名属性
+                            
+                            // 处理用户名显示，匿名用户不可点击
+                            const usernameDisplay = !bottle.is_anonymous ? 
+                                `<a href="user_profile.html?id=${bottle.user_id}" class="text-primary">${bottle.username}</a>` : 
+                                `<span class="text-primary">${bottle.username}</span>`;
+                                
+                            bottleDiv.innerHTML = `
+                                <div class="bottle-header">
+                                    <span class="bottle-author">${usernameDisplay}</span>
+                                    <span class="bottle-time">捡到时间: ${pickTime}</span>
+                                    <span class="d-none">ID:${bottle.id}</span>
+                                </div>
+                                <div class="bottle-content">${bottle.content}</div>
+                                <div class="bottle-actions">
+                                    <div>
+                                        <span class="bottle-btn">
+                                            <i class="fas fa-heart"></i> ${bottle.like_count || 0} 点赞
+                                        </span>
+                                        <span class="bottle-btn comment-count" title="点击评论并扔回大海" style="color: #0d6efd; text-decoration: underline; cursor: pointer;">
+                                            <i class="fas fa-comment"></i> ${bottle.comment_count || 0} 评论
+                                        </span>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button class="btn btn-primary comment-btn w-100 py-2" data-bottle-id="${bottle.id}" style="font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                            <i class="fas fa-paper-plane"></i> 评论并扔回大海
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            container.appendChild(bottleDiv);
+                            
+                            // 绑定评论按钮事件
+                            const commentBtn = bottleDiv.querySelector('.comment-btn');
+                            if (commentBtn && !commentBtn.hasEventListener) {
+                                commentBtn.hasEventListener = true;
+                                commentBtn.addEventListener('click', function(event) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    
+                                    Logger.log("点击了评论按钮，漂流瓶ID:", bottle.id);
+                                    document.getElementById('commentBottleId').value = bottle.id;
+                                    
+                                    // 手动显示模态框
+                                    if (window.commentModalInstance) {
+                                        window.commentModalInstance.show();
+                                        Logger.log("手动打开模态框");
+                                    } else {
+                                        Logger.log("创建新的模态框实例");
+                                        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+                                        modal.show();
+                                    }
+                                });
+                            }
+                            
+                            // 绑定评论数量点击事件
+                            const commentCount = bottleDiv.querySelector('.comment-count');
+                            if (commentCount && !commentCount.hasEventListener) {
+                                commentCount.hasEventListener = true;
+                                commentCount.addEventListener('click', function() {
+                                    Logger.log("点击了评论数量，触发评论按钮点击");
+                                    commentBtn.click();
+                                });
+                            }
+                        });
+                        
+                        Logger.log("找到的评论按钮数量:", document.querySelectorAll('.comment-btn').length);
+                    } else {
+                        Logger.log("没有找到捡到的漂流瓶");
+                        container.innerHTML = `
+                            <div class="text-center">
+                                <p>你还没有捡到过漂流瓶，去<a href="pick.html">捡一个</a>吧！</p>
+                            </div>
+                        `;
+                    }
+                    
+            })
+            .catch(error => {
+                Logger.error('Error:', error);
+                document.querySelector('.picked-bottles-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        加载捡到的漂流瓶失败，请稍后再试
+                    </div>
+                `;
+            });
+        }
+        
+        // 更新VIP状态显示
+        function updateVipStatus(data) {
+            const statusContainer = document.getElementById('currentVipStatus');
+            
+            if (data.is_vip) {
+                statusContainer.innerHTML = `
+                    <div class="alert alert-warning mb-2">
+                        <strong><i class="fas fa-crown"></i> 您当前是VIP会员</strong>
+                        <p class="mb-0 small">到期时间: ${new Date(data.vip_expire_date).toLocaleDateString()}</p>
+                    </div>
+                    <p class="small">续费VIP可延长有效期</p>
+                `;
+            } else {
+                statusContainer.innerHTML = `
+                    <p>您还不是VIP会员</p>
+                    <p class="small">开通VIP享受更多特权</p>
+                `;
+            }
+            
+            // 更新全局用户信息
+            if (window.userInfo) {
+                window.userInfo.is_vip = data.is_vip ? 1 : 0;
+                window.userInfo.vip_expire_date = data.vip_expire_date;
+            }
+        }
+        
+        // 加载VIP状态
+        function loadVipStatus() {
+            fetch('api.php?action=check_vip_status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        updateVipStatus(data);
+                        // 在更新VIP状态后，重新绑定按钮
+                        setTimeout(() => bindVipButtons(), 100);
+                    }
+                })
+                .catch(error => {
+                    Logger.error('Error checking VIP status:', error);
+                    showAlert('获取VIP状态失败，请刷新页面后重试', 'danger');
+                });
+        }
+        
+        // 绑定VIP购买按钮事件
+        function bindVipButtons() {
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            
+            // 先移除旧的事件监听器，防止重复绑定
+            vipButtons.forEach(button => {
+                // 使用cloneNode创建一个新按钮，替换旧按钮，从而清除所有事件监听器
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+            });
+            
+            // 重新获取所有按钮（因为已经替换了）
+            const newVipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            
+            // 绑定新的事件监听器
+            newVipButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const months = parseInt(this.dataset.months);
+                    const points = parseInt(this.dataset.points);
+                    
+                    if (window.userInfo && window.userInfo.points < points) {
+                        showAlert(`积分不足，开通${months}个月VIP需要${points}积分，您当前积分为${window.userInfo.points}`, 'warning');
+                        return;
+                    }
+                    
+                    if (confirm(`确定要开通${months}个月VIP会员，需消耗${points}积分吗？`)) {
+                        upgradeVip(months);
+                    }
+                });
+            });
+            
+            Logger.log("VIP按钮事件已重新绑定");
+        }
+        
+        // 升级VIP
+        function upgradeVip(months) {
+            // 防止重复提交
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            vipButtons.forEach(btn => btn.disabled = true);
+            
+            try {
+                fetch('api.php?action=upgrade_vip', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ months: months, level: 1 })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new TypeError("服务器返回的不是JSON格式");
+                    }
+                    
+                    return response.text().then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            Logger.error('JSON解析错误:', e);
+                            Logger.error('响应内容:', text);
+                            throw new Error('服务器返回的数据格式不正确');
+                        }
+                    });
+                })
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        
+                        // 更新VIP状态
+                        loadVipStatus();
+                        
+                        // 更新用户资料显示
+                        loadUserProfile();
+                        
+                        // 更新会话状态
+                        if (window.userInfo) {
+                            window.userInfo.is_vip = 1;
+                            window.userInfo.vip_level = 1;
+                            window.userInfo.vip_expire_date = data.vip_expire_date;
+                            
+                            // 更新积分显示
+                            const userPoints = document.getElementById('userPoints');
+                            const userPointsForVip = document.getElementById('userPointsForVip');
+                            if (userPoints) userPoints.textContent = data.remaining_points;
+                            if (userPointsForVip) userPointsForVip.textContent = data.remaining_points;
+                            
+                            // 显示VIP签到奖励提示
+                            const vipCheckinBonus = document.getElementById('vipCheckinBonus');
+                            if (vipCheckinBonus) vipCheckinBonus.classList.remove('d-none');
+                        }
+                    } else {
+                        showAlert(data.message || '开通VIP失败，请稍后再试', 'danger');
+                        
+                        if (data.message && data.message.includes('积分不足')) {
+                            setTimeout(() => {
+                                showAlert('提示：您可以通过每日签到、扔漂流瓶、收到点赞等方式获得更多积分', 'info');
+                            }, 1000);
+                        }
+                    }
+                })
+                .catch(error => {
+                    Logger.error('Error during VIP upgrade:', error);
+                    showAlert('开通VIP失败，请刷新页面后重试', 'danger');
+                })
+                .finally(() => {
+                    vipButtons.forEach(btn => btn.disabled = false);
+                });
+            } catch (err) {
+                Logger.error('Exception during VIP upgrade:', err);
+                showAlert('开通VIP过程中发生错误，请刷新页面后重试', 'danger');
+                vipButtons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // 更新资料显示
+        function updateProfileDisplay() {
+            // 如果页面已经加载了用户资料，就更新积分显示
+            const pointsElement = document.querySelector('.stats .fas.fa-coins');
+            if (pointsElement && window.userInfo) {
+                const parentElement = pointsElement.parentNode;
+                if (parentElement) {
+                    parentElement.innerHTML = `<i class="fas fa-coins text-warning"></i> 积分: <span id="userPoints">${window.userInfo.points}</span>`;
+                }
+            }
+        }
+        
+        // 显示警告信息
+        function showAlert(message, type = 'info') {
+            let alertContainer = document.getElementById('alertContainer');
+            
+            // 如果没找到，尝试通过类名查找
+            if (!alertContainer) {
+                alertContainer = document.querySelector('.alert-container');
+            }
+            
+            if (!alertContainer) {
+                Logger.log('Alert container not found, creating one');
+                alertContainer = document.createElement('div');
+                alertContainer.id = 'alertContainer';
+                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                document.body.appendChild(alertContainer);
+            }
+            
+            const alertId = 'alert-' + Date.now();
+            const alertElement = document.createElement('div');
+            alertElement.id = alertId;
+            alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+            alertElement.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            // 添加到容器顶部
+            alertContainer.prepend(alertElement);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+        
+        // 从服务器获取积分配置信息
+        function loadPointsConfig() {
+            fetch('api.php?action=get_points_config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新页面上的积分配置显示
+                        const checkinPoints = data.config.POINTS_PER_CHECKIN;
+                        const weeklyBonus = data.config.POINTS_PER_WEEKLY_CHECKIN;
+                        const vipBonus = data.config.POINTS_PER_VIP_CHECKIN;
+                        
+                        // 更新签到积分说明
+                        const checkinInfoElement = document.querySelector('.checkin-status p:nth-child(3)');
+                        if (checkinInfoElement) {
+                            checkinInfoElement.innerHTML = `签到可获得<strong>${checkinPoints}</strong>积分，连续签到7天额外奖励<strong>${weeklyBonus}</strong>积分！`;
+                        }
+                        
+                        // 更新VIP额外积分说明
+                        const vipBonusElement = document.getElementById('vipCheckinBonus');
+                        if (vipBonusElement) {
+                            vipBonusElement.innerHTML = `<i class="fas fa-crown"></i> VIP会员每次签到额外获得<strong>${vipBonus}</strong>积分！`;
+                        }
+                    }
+                })
+                .catch(error => {
+                    Logger.error('获取积分配置失败:', error);
+                });
+        }
+        
+        // 页面初始化
+        function initProfilePage() {
+            Logger.log("页面初始化开始...");
+            
+            // 加载积分配置
+            loadPointsConfig();
+            
+            // 全局用户信息对象
+            window.userInfo = {};
+            
+            // 创建或重置提示信息容器
+            let alertContainer = document.getElementById('alertContainer');
+            if (!alertContainer) {
+                alertContainer = document.createElement('div');
+                alertContainer.id = 'alertContainer';
+                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                document.body.appendChild(alertContainer);
+            } else {
+                // 清空已有容器
+                alertContainer.innerHTML = '';
+                // 更新样式确保一致性
+                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+            }
+            
+            // 确保签到按钮初始状态为加载中
+            const checkinBtn = document.getElementById('checkinBtn');
+            if (checkinBtn) {
+                checkinBtn.disabled = true;
+                checkinBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 加载中...';
+            }
+            
+            const checkinCompleted = document.getElementById('checkinCompleted');
+            if (checkinCompleted) {
+                checkinCompleted.classList.add('d-none');
+            }
+            
+            // 设置模态框实例
+            window.commentModalInstance = new bootstrap.Modal(document.getElementById('commentModal'));
+            
+            // 1. 首先加载用户资料（包含签到状态）
+            loadUserProfile();
+            
+            // 2. 其他数据加载
+            loadUserBottles();
+            loadUserPickedBottles();
+            loadVipStatus();
+            
+            // 添加评论按钮到已有漂流瓶
+            addCommentButtonsToExistingBottles();
+            
+            // 设置DOM变化监听
+            setupMutationObserver();
+            
+            // 绑定各种事件
+            bindVipButtons();
+            
+            // 绑定签到按钮事件
+            if (checkinBtn) {
+                checkinBtn.addEventListener('click', function() {
+                    // 防止重复点击
+                    if (this.disabled) return;
+                    
+                    // 添加标记，防止重复提交
+                    if (this.dataset.processing === 'true') return;
+                    this.dataset.processing = 'true';
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 签到中...';
+                    
+                    // 显示正在处理的提示
+                    //showAlert('正在处理签到请求，请稍候...', 'info');
+                    
+                    // 设置超时计时器，避免请求长时间未响应
+                    let checkinTimeout = setTimeout(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                        this.dataset.processing = 'false';
+                        showAlert('签到请求超时，请稍后再试', 'warning');
+                    }, 15000); // 15秒超时
+                    
+                    // 重试机制变量
+                    let retryCount = 0;
+                    const maxRetries = 2;
+                    
+                    // 封装签到请求函数以便重试
+                    const sendCheckinRequest = () => {
+                        Logger.log(`发送签到请求 (尝试 ${retryCount + 1}/${maxRetries + 1})`);
+                        
+                        fetch('api.php?action=user_checkin', { 
+                            method: 'POST',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-Request-Time': new Date().getTime()
+                            },
+                            cache: 'no-store'
+                        })
+                        .then(response => {
+                            // 检查响应状态
+                            if (!response.ok) {
+                                throw new Error(`HTTP请求失败: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            clearTimeout(checkinTimeout); // 清除超时计时器
+                            
+                            // 检查内容类型
+                            const contentType = response.headers.get('content-type');
+                            if (!contentType || !contentType.includes('application/json')) {
+                                throw new Error('响应不是JSON格式');
+                            }
+                            
+                            return response.json();
+                        })
+                        .then(data => {
+                            Logger.log("签到响应:", data);
+                            
+                            if (data.success) {
+                                // 更新UI
+                                document.getElementById('checkinCompleted').classList.remove('d-none');
+                                
+                                // 更新签到按钮状态
+                                this.disabled = true;
+                                this.innerHTML = '今日已签到';
+                                
+                                // 更新签到信息
+                                const consecutiveDaysElement = document.getElementById('consecutiveDays');
+                                if (consecutiveDaysElement) {
+                                    consecutiveDaysElement.textContent = data.consecutive_days;
+                                }
+                                
+                                const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+                                if (monthlyCheckinsElement) {
+                                    monthlyCheckinsElement.textContent = data.monthly_checkins || parseInt(monthlyCheckinsElement.textContent || '0') + 1;
+                                }
+                                
+                                // 更新积分信息
+                                const pointsGained = data.points_earned || 0;
+                                if (window.userInfo) {
+                                    window.userInfo.points = (window.userInfo.points || 0) + pointsGained;
+                                }
+                                
+                                // 更新积分显示
+                                const userPoints = document.getElementById('userPoints');
+                                if (userPoints) {
+                                    userPoints.textContent = window.userInfo.points;
+                                }
+                                
+                                const userPointsVip = document.getElementById('userPointsForVip');
+                                if (userPointsVip) {
+                                    userPointsVip.textContent = window.userInfo.points;
+                                }
+                                
+                                // 显示成功信息
+                                updateProfileDisplay();
+                                showAlert(`签到成功！获得${pointsGained}积分。${data.consecutive_days > 1 ? `连续签到${data.consecutive_days}天！` : ''}`, 'success');
+                            } else {
+                                if (data.message === '今天已经签到过了') {
+                                    // 已经签到过
+                                    this.disabled = true;
+                                    this.innerHTML = '今日已签到';
+                                    document.getElementById('checkinCompleted').classList.remove('d-none');
+                                    showAlert('您今天已经签到过了', 'info');
+                                } else {
+                                    // 其他错误
+                                    showAlert(data.message || '签到失败，请稍后再试', 'danger');
+                                    this.disabled = false;
+                                    this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            Logger.error('签到错误:', error);
+                            
+                            // 检查是否需要重试
+                            if (retryCount < maxRetries) {
+                                retryCount++;
+                                showAlert(`签到请求失败，正在重试(${retryCount}/${maxRetries})...`, 'warning');
+                                // 使用指数退避策略进行重试
+                                setTimeout(() => {
+                                    // 确保之前的超时计时器已清除
+                                    clearTimeout(checkinTimeout);
+                                    // 设置新的超时计时器
+                                    checkinTimeout = setTimeout(() => {
+                                        this.disabled = false;
+                                        this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                                        this.dataset.processing = 'false';
+                                        showAlert('签到请求超时，请稍后再试', 'warning');
+                                    }, 15000);
+                                    // 重新请求
+                                    sendCheckinRequest();
+                                }, 1000 * Math.pow(2, retryCount)); // 指数退避: 2秒, 4秒, ...
+                            } else {
+                                // 超过重试次数，显示错误
+                                clearTimeout(checkinTimeout);
+                                showAlert('签到失败，请刷新页面后重试', 'danger');
+                                this.disabled = false;
+                                this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                            }
+                        })
+                        .finally(() => {
+                            if (retryCount >= maxRetries) {
+                                // 清除处理中标记
+                                this.dataset.processing = 'false';
+                            }
+                        });
+                    };
+                    
+                    // 开始首次请求
+                    sendCheckinRequest();
+                });
+            }
+            
+            // 绑定更新签名按钮事件
+            const updateSignatureBtn = document.getElementById('updateSignatureBtn');
+            if (updateSignatureBtn && !updateSignatureBtn.hasEventListener) {
+                updateSignatureBtn.hasEventListener = true;
+                updateSignatureBtn.addEventListener('click', function() {
+                    const signature = document.getElementById('signatureInput').value.trim();
+                    
+                    // 字数限制
+                    if (signature.length > 50) {
+                        showAlert('签名最多50个字', 'warning');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    
+                    fetch('api.php?action=update_signature', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ signature: signature })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('个性签名更新成功', 'success');
+                            
+                            // 更新全局用户信息
+                            if (window.userInfo) {
+                                window.userInfo.signature = signature;
+                            }
+                            
+                            // 更新个人资料显示中的签名部分，无需重新加载整个资料
+                            const signatureElement = document.querySelector('.profile-container .row .col-md-6:first-child p:nth-of-type(3)');
+                            if (signatureElement) {
+                                if (signature) {
+                                    signatureElement.textContent = `个性签名: ${signature}`;
+                                    signatureElement.style.display = 'block';
+                                } else {
+                                    signatureElement.style.display = 'none';
+                                }
+                            } else if (signature) {
+                                // 如果找不到现有的签名元素但有签名，则添加一个
+                                const profileCol = document.querySelector('.profile-container .row .col-md-6:first-child');
+                                if (profileCol) {
+                                    const signatureP = document.createElement('p');
+                                    signatureP.textContent = `个性签名: ${signature}`;
+                                    // 插入到性别和注册时间之后
+                                    const timeElement = profileCol.querySelector('p:nth-of-type(2)');
+                                    if (timeElement) {
+                                        timeElement.insertAdjacentElement('afterend', signatureP);
+                                    } else {
+                                        profileCol.appendChild(signatureP);
+                                    }
+                                }
+                            }
+                        } else {
+                            showAlert(data.message || '更新签名失败', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        Logger.error('Error:', error);
+                        showAlert('更新签名失败，请稍后再试', 'danger');
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                    });
+                });
+            }
+            
+            // 绑定评论提交按钮事件
+            const commentSubmitBtn = document.getElementById('commentSubmitBtn');
+            if (commentSubmitBtn && !commentSubmitBtn.hasEventListener) {
+                commentSubmitBtn.hasEventListener = true;
+                commentSubmitBtn.addEventListener('click', function() {
+                    const bottleId = document.getElementById('commentBottleId').value;
+                    const commentContent = document.getElementById('commentContent').value.trim();
+                    
+                    if (!commentContent) {
+                        showAlert('请输入评论内容', 'warning');
+                        return;
+                    }
+                    
+                    if (commentContent.length > 200) {
+                        showAlert('评论内容不能超过200字', 'warning');
+                        return;
+                    }
+                    
+                    // 防止重复提交
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
+                    
+                    fetch('api.php?action=comment_bottle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            bottle_id: bottleId,
+                            content: commentContent
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 关闭模态框
+                            if (window.commentModalInstance) {
+                                window.commentModalInstance.hide();
+                            }
+                            
+                            // 清空评论内容
+                            document.getElementById('commentContent').value = '';
+                            
+                            // 保存已评论的漂流瓶ID到本地存储中
+                            try {
+                                let commentedBottleIds = [];
+                                const storedIds = localStorage.getItem('commentedBottleIds');
+                                if (storedIds) {
+                                    commentedBottleIds = JSON.parse(storedIds);
+                                }
+                                
+                                // 如果ID不在列表中，则添加
+                                if (!commentedBottleIds.includes(bottleId)) {
+                                    commentedBottleIds.push(bottleId);
+                                    localStorage.setItem('commentedBottleIds', JSON.stringify(commentedBottleIds));
+                                    Logger.log("已将漂流瓶ID添加到已评论列表:", bottleId);
+                                }
+                            } catch (e) {
+                                Logger.error("保存已评论漂流瓶ID失败:", e);
+                            }
+                            
+                            // 显示成功信息
+                            showAlert('评论成功，漂流瓶已扔回大海', 'success');
+                            
+                            // 更新漂流瓶列表，移除已评论的漂流瓶
+                            const bottleElement = document.querySelector(`.bottle[data-bottle-id="${bottleId}"]`);
+                            if (bottleElement) {
+                                bottleElement.remove();
+                                
+                                // 如果没有漂流瓶了，显示提示信息
+                                if (document.querySelectorAll('.picked-bottles-container .bottle').length === 0) {
+                                    document.querySelector('.picked-bottles-container').innerHTML = `
+                                        <div class="text-center">
+                                            <p>你没有未评论的漂流瓶，去<a href="pick.html">捡一个</a>吧！</p>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        } else {
+                            showAlert(data.message || '评论失败，请稍后再试', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        Logger.error('Error:', error);
+                        showAlert('评论失败，请稍后再试', 'danger');
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = '提交评论并扔回大海';
+                    });
+                });
+            }
+            
+            // 绑定清除已评论漂流瓶按钮事件
+            const clearCommentedBottlesBtn = document.getElementById('clearCommentedBottles');
+            if (clearCommentedBottlesBtn && !clearCommentedBottlesBtn.hasEventListener) {
+                // 标记已绑定事件
+                clearCommentedBottlesBtn.hasEventListener = true;
+                clearCommentedBottlesBtn.addEventListener('click', function() {
+                    // 防止重复点击
+                    this.disabled = true;
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...';
+                    
+                    // 清除本地存储中的已评论漂流瓶ID列表
+                    try {
+                        localStorage.removeItem('commentedBottleIds');
+                        Logger.log("已清除本地存储中的已评论漂流瓶ID列表");
+                        
+                        // 显示成功消息
+                        showAlert('已重置漂流瓶显示，即将重新加载所有漂流瓶', 'success');
+                        
+                        // 重新加载漂流瓶
+                        setTimeout(() => {
+                            loadUserPickedBottles();
+                            // 恢复按钮可用状态
+                            this.disabled = false;
+                            this.innerHTML = originalText;
+                        }, 1000);
+                    } catch (e) {
+                        Logger.error("清除已评论漂流瓶ID失败:", e);
+                        showAlert('重置失败，请刷新页面后重试', 'danger');
+                        // 出错时也恢复按钮可用状态
+                        this.disabled = false;
+                        this.innerHTML = originalText;
+                    }
+                });
+                Logger.log("已为'显示全部漂流瓶'按钮绑定事件");
+            } else if (clearCommentedBottlesBtn) {
+                Logger.log("'显示全部漂流瓶'按钮已绑定事件，跳过重复绑定");
+            }
+            
+            Logger.log("页面初始化完成");
+        }
+        
+        // 页面加载完成后执行初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            Logger.log("页面加载完成");
+            
+            // 检查是否已经初始化过，避免重复初始化
+            if (window.profilePageInitialized) {
+                Logger.log("页面已经初始化过，跳过重复初始化");
+                return;
+            }
+            window.profilePageInitialized = true;
+            
+            // 初始化日志工具
+            Logger.init();
+            
+            // 初始化模态框
+            Logger.log("初始化评论模态框");
+            const commentModal = document.getElementById('commentModal');
+            if (commentModal) {
+                Logger.log("找到评论模态框元素");
+                // 创建模态框实例并存储为全局变量，方便后续使用
+                window.commentModalInstance = new bootstrap.Modal(commentModal);
+                
+                // 监听模态框打开事件
+                commentModal.addEventListener('shown.bs.modal', function() {
+                    Logger.log("评论模态框已打开");
+                    const bottleId = document.getElementById('commentBottleId').value;
+                    Logger.log("当前评论的漂流瓶ID:", bottleId);
+                    
+                    // 检查ID是否有效
+                    if (!bottleId || isNaN(parseInt(bottleId))) {
+                        Logger.error("无效的漂流瓶ID:", bottleId);
+                        showAlert('未找到有效的漂流瓶ID，请重新选择漂流瓶', 'warning');
+                        setTimeout(() => {
+                            if (window.commentModalInstance) {
+                                window.commentModalInstance.hide();
+                            }
+                        }, 1500);
+                        return;
+                    }
+                    
+                    document.getElementById('commentContent').focus();
+                });
+            } else {
+                Logger.error("未找到评论模态框元素");
+            }
+            
+            initProfilePage();
+        });
+    </script>
+</body>
+</html>

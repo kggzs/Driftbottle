@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扔漂流瓶 - 漂流瓶</title>
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <!-- 用户限制和积分信息 -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="user-limits">
+                                        <p class="mb-1"><i class="fas fa-gift text-success"></i> 免费次数剩余: <span id="freeThrowsRemaining">--</span>/10 次</p>
+                                        <p class="mb-1" id="vipThrowBonus" style="display: none;"><i class="fas fa-crown text-warning"></i> <span class="text-warning">VIP特权：每天额外免费次数（0点刷新）</span></p>
+                                        <p class="mb-1" id="vipFreeThrows"><i class="fas fa-star text-warning"></i> 会员次数剩余: <span id="vipFreeThrowsRemaining">--</span>/5 次</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <p class="mb-0"><i class="fas fa-coins text-warning"></i> 我的积分: <span id="userPoints">--</span></p>
+                                    <small class="text-muted">每瓶消耗1积分 (免费次数内不消耗)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-center">扔一个漂流瓶</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="throwBottleForm">
+                                <div class="form-group mb-4">
+                                    <label for="bottleContent" class="form-label">写下你想说的话</label>
+                                    <textarea class="form-control" id="bottleContent" name="bottleContent" rows="6" placeholder="在这里写下你的心情、秘密或想法..."></textarea>
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    <label for="mood" class="form-label">选择你的心情</label>
+                                    <select class="form-control" id="mood" name="mood">
+                                        <option value="开心">开心 😊</option>
+                                        <option value="难过">难过 😢</option>
+                                        <option value="平静">平静 😌</option>
+                                        <option value="愤怒">愤怒 😡</option>
+                                        <option value="期待">期待 🤩</option>
+                                        <option value="忧郁">忧郁 😔</option>
+                                        <option value="其他">其他 😶</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="isAnonymous" name="isAnonymous">
+                                    <label class="form-check-label" for="isAnonymous">
+                                        匿名发送（隐藏你的用户名）
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-4" id="locationDiv">
+                                    <input class="form-check-input" type="checkbox" id="locationCheckbox" name="includeLocation" checked>
+                                    <label class="form-check-label" for="locationCheckbox">
+                                        <i class="fas fa-map-marker-alt"></i> 显示地理位置信息 
+                                        <span class="text-muted small" id="locationHint"></span>
+                                    </label>
+                                    <div class="mt-2 small text-muted location-preview" id="locationPreview"></div>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary px-5" id="throwButton">
+                                        <i class="fas fa-paper-plane"></i> 扔向大海
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <div class="text-center text-muted">
+                                <p><small>你的漂流瓶会被随机的用户捡起。提示：不要在漂流瓶中包含你的个人隐私信息。</small></p>
+                                <p><small>每天有10次免费扔瓶机会，VIP用户额外获得5次免费机会。所有次数在每天0点自动刷新！超过免费次数后，每次扔瓶消耗1积分。</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <script src="assets/js/app.js"></script>
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 防止表单重复提交的标记
+            let isSubmitting = false;
+            
+            // 检查登录状态
+            checkAuth(function(isLoggedIn) {
+                if (!isLoggedIn) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // 检查VIP状态
+                checkVipStatus();
+                
+                // 获取用户限制信息
+                getDailyLimits();
+                
+                // 获取地理位置预览
+                getLocationPreview();
+                
+                // 表单提交事件 - 使用onclick替代form submit
+                const submitBtn = document.getElementById('throwButton');
+                if (submitBtn) {
+                    submitBtn.onclick = function(e) {
+                        e.preventDefault();
+                        
+                        // 防止重复提交
+                        if (isSubmitting) {
+                            Logger.log('防止重复提交');
+                            return false;
+                        }
+                        
+                        try {
+                            const content = document.getElementById('bottleContent').value.trim();
+                            const mood = document.getElementById('mood').value;
+                            const isAnonymous = document.getElementById('isAnonymous').checked ? 1 : 0;
+                            const includeLocation = document.getElementById('locationCheckbox').checked ? 1 : 0;
+                            
+                            if (content === '') {
+                                showAlert('请输入漂流瓶内容', 'danger');
+                                return false;
+                            }
+                            
+                            // 设置防重复提交标记
+                            isSubmitting = true;
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在扔出...';
+                            
+                            // 提交扔瓶请求
+                            fetch('api.php/create_bottle', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    content, 
+                                    mood, 
+                                    is_anonymous: isAnonymous,
+                                    include_location: includeLocation
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAlert('漂流瓶已成功扔出！', 'success');
+                                    document.getElementById('bottleContent').value = '';
+                                    document.getElementById('isAnonymous').checked = false;
+                                    
+                                    // 更新积分和限制信息
+                                    updateUserPointsDisplay(data.is_free, data.points_deducted);
+                                    getDailyLimits();
+                                } else {
+                                    showAlert(data.message, 'danger');
+                                }
+                            })
+                            .catch(error => {
+                                Logger.error('Error:', error);
+                                showAlert('发生错误，请稍后再试', 'danger');
+                            })
+                            .finally(() => {
+                                // 无论成功失败，都重置提交状态
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
+                                isSubmitting = false;
+                            });
+                        } catch (e) {
+                            Logger.error('Exception:', e);
+                            showAlert('发生异常，请稍后再试', 'danger');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
+                            isSubmitting = false;
+                        }
+                        
+                        return false; // 防止表单默认提交
+                    };
+                }
+                
+                // 阻止表单默认提交
+                const form = document.getElementById('throwBottleForm');
+                if (form) {
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        return false;
+                    };
+                }
+            });
+        });
+        
+        // 获取用户每日限制
+        function getDailyLimits() {
+            fetch('api.php/get_daily_limits')
+            .then(response => response.json())
+            .then(data => {
+                Logger.log("服务器返回的数据:", data); // 添加调试信息
+                
+                if (data.success) {
+                    // 基本限制信息，确保不显示负数
+                    const freeThrowsRemaining = Math.max(0, data.free_throws_remaining || 0);
+                    document.getElementById('freeThrowsRemaining').textContent = freeThrowsRemaining;
+                    
+                    // 获取最新积分
+                    fetch('api.php/user_info')
+                    .then(response => response.json())
+                    .then(userData => {
+                        if (userData.success && userData.user) {
+                            // 更新全局用户信息
+                            if (!window.userInfo) window.userInfo = {};
+                            window.userInfo.points = userData.user.points;
+                            document.getElementById('userPoints').textContent = userData.user.points;
+                        }
+                    })
+                    .catch(error => Logger.error('Error:', error));
+                    
+                    // 更新VIP相关信息
+                    if (data.is_vip) {
+                        Logger.log("VIP用户，尝试显示VIP特权"); // 调试信息
+                        
+                        // 显示VIP特权信息
+                        const vipThrowBonus = document.getElementById('vipThrowBonus');
+                        if (vipThrowBonus) {
+                            vipThrowBonus.style.display = 'block';
+                        }
+                        
+                        // 显示VIP专属次数
+                        const vipFreeThrows = document.getElementById('vipFreeThrows');
+                        if (vipFreeThrows) {
+                            vipFreeThrows.style.display = 'block';
+                            // 使用后端返回的VIP专属剩余次数
+                            const vipFreeThrowsRemaining = Math.max(0, data.vip_free_throws_remaining || 0);
+                            document.getElementById('vipFreeThrowsRemaining').textContent = vipFreeThrowsRemaining;
+                            Logger.log("VIP专属次数:", vipFreeThrowsRemaining); // 调试信息
+                        }
+                        
+                        // 更新页脚信息
+                        const limitInfo = document.querySelector('.card-footer p:last-child small');
+                        if (limitInfo) {
+                            limitInfo.textContent = `VIP特权：每天有15次免费扔瓶机会，包括5次专属会员次数。`;
+                        }
+                    } else {
+                        // 非VIP用户隐藏VIP相关信息
+                        const vipThrowBonus = document.getElementById('vipThrowBonus');
+                        if (vipThrowBonus) {
+                            vipThrowBonus.style.display = 'none';
+                        }
+                        const vipFreeThrows = document.getElementById('vipFreeThrows');
+                        if (vipFreeThrows) {
+                            vipFreeThrows.style.display = 'none';
+                        }
+                    }
+                    
+                    // 当免费次数用完时，提醒用户将消耗积分
+                    const pointsWarning = document.querySelector('.col-md-4 small.text-muted');
+                    if (pointsWarning) {
+                        if (freeThrowsRemaining <= 0 && (!data.is_vip || data.vip_free_throws_remaining <= 0)) {
+                            pointsWarning.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle"></i> 免费次数已用完，将消耗积分</span>';
+                        } else {
+                            pointsWarning.textContent = '每瓶消耗1积分 (免费次数内不消耗)';
+                        }
+                    }
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+        
+        // 更新积分显示
+        function updateUserPointsDisplay(isFree, pointsDeducted) {
+            if (window.userInfo) {
+                if (!isFree) {
+                    window.userInfo.points -= pointsDeducted;
+                    document.getElementById('userPoints').textContent = window.userInfo.points;
+                }
+            }
+        }
+        
+        // 更新扔瓶按钮状态
+        function updateThrowButton(disable) {
+            const throwButton = document.getElementById('throwButton');
+            if (disable) {
+                throwButton.disabled = true;
+                throwButton.innerHTML = '<i class="fas fa-ban"></i> 今日已达上限';
+            } else {
+                throwButton.disabled = false;
+                throwButton.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
+            }
+        }
+        
+        // 检查VIP状态
+        function checkVipStatus() {
+            fetch('api.php/check_vip_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 保存VIP状态到全局对象
+                    if (!window.userInfo) window.userInfo = {};
+                    window.userInfo.is_vip = data.is_vip;
+                    window.userInfo.vip_level = data.vip_level;
+                    window.userInfo.vip_expire_date = data.vip_expire_date;
+                    
+                    // 如果是VIP用户，更新UI显示
+                    if (data.is_vip) {
+                        // 更新VIP特权信息
+                        const vipThrowBonus = document.getElementById('vipThrowBonus');
+                        if (vipThrowBonus) {
+                            vipThrowBonus.style.display = 'block';
+                        }
+                        
+                        // 更新VIP专属次数
+                        const vipFreeThrows = document.getElementById('vipFreeThrows');
+                        if (vipFreeThrows) {
+                            vipFreeThrows.style.display = 'block';
+                        }
+                        
+                        // 更新页脚信息
+                        const limitInfo = document.querySelector('.card-footer p:last-child small');
+                        if (limitInfo) {
+                            limitInfo.textContent = `VIP特权：每天有15次免费扔瓶机会，包括5次专属会员次数。`;
+                        }
+                        
+                        // 更新地理位置信息勾选框
+                        const locationCheckbox = document.getElementById('locationCheckbox');
+                        if (locationCheckbox) {
+                            locationCheckbox.disabled = false;
+                            locationCheckbox.checked = true;
+                            const locationHint = document.getElementById('locationHint');
+                            if (locationHint) {
+                                locationHint.textContent = '(VIP可取消)';
+                            }
+                        }
+                    } else {
+                        // 非VIP用户，强制启用地理位置信息
+                        const locationCheckbox = document.getElementById('locationCheckbox');
+                        if (locationCheckbox) {
+                            locationCheckbox.disabled = true;
+                            locationCheckbox.checked = true;
+                            const locationHint = document.getElementById('locationHint');
+                            if (locationHint) {
+                                locationHint.textContent = '(必选)';
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+        
+        // 获取地理位置预览
+        async function getLocationPreview() {
+            try {
+                const response = await fetch('api.php/get_location_preview');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || '获取位置信息失败');
+                }
+                
+                const locationPreview = document.getElementById('locationPreview');
+                let previewText = `<i class="fas fa-map-marker-alt text-danger"></i> ${data.location}`;
+                
+                if (data.ip_address) {
+                    const isVip = window.userInfo && window.userInfo.is_vip;
+                    if (isVip) {
+                        previewText += `<br><i class="fas fa-globe text-primary"></i> IP: ${data.ip_address}`;
+                    } else {
+                        // 对非VIP用户隐藏部分IP
+                        const maskedIp = data.ip_address.replace(/(\d+)\.(\d+)\.(\d+)\.(\d+)/, '$1.$2.**.***');
+                        previewText += `<br><i class="fas fa-globe text-primary"></i> IP: ${maskedIp}`;
+                    }
+                }
+                
+                locationPreview.innerHTML = previewText;
+            } catch (error) {
+                Logger.error('获取位置信息失败:', error);
+                const locationPreview = document.getElementById('locationPreview');
+                locationPreview.innerHTML = `
+                    <p class="error">获取位置信息失败</p>
+                    <p class="error-detail">${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

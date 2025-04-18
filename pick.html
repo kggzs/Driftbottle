@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捡漂流瓶 - 漂流瓶</title>
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <!-- 用户今日捡瓶限制信息 -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="mb-0">
+                                        <i class="fas fa-info-circle text-primary"></i> 
+                                        今日还可捡起: <span id="pickRemaining">--</span>/<span id="pickLimit">20</span> 个漂流瓶
+                                        <span id="vipBonus" class="badge bg-warning text-dark ms-2" style="display: none;">
+                                            <i class="fas fa-crown"></i> VIP额外次数: +10/天
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <span class="badge bg-info" id="totalPickedCount">已捡起: 0 个</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-center">捡一个漂流瓶</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <button id="pickBottleBtn" class="btn btn-success btn-lg">
+                                    <i class="fas fa-search"></i> 随机捡一个漂流瓶
+                                </button>
+                            </div>
+                            
+                            <div class="bottle-container mt-4">
+                                <!-- 漂流瓶内容将在这里动态生成 -->
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="text-center text-muted">
+                                <p><small>注意：你无法捡到自己扔出的漂流瓶，每个漂流瓶仅能被同一用户捡起一次。</small></p>
+                                <p><small>普通用户每天最多可捡起20个漂流瓶，VIP用户每天可捡30个，次数在每天0点自动刷新！</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <script src="assets/js/app.js"></script>
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            checkAuth(function(isLoggedIn) {
+                if (!isLoggedIn) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // 检查用户VIP状态
+                checkVipStatus();
+                
+                // 获取用户限制信息
+                getDailyLimits();
+                
+                // 获取已捡起的瓶子数量
+                getPickedBottlesCount();
+                
+                // 初始化捡瓶页面
+                initPickBottlePage();
+            });
+        });
+        
+        // 获取用户每日限制
+        function getDailyLimits() {
+            fetch('api.php/get_daily_limits')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const isVip = data.is_vip;
+                    const pickLimit = isVip ? 30 : 20;
+                    
+                    document.getElementById('pickRemaining').textContent = data.pick_remaining;
+                    document.getElementById('pickLimit').textContent = pickLimit;
+                    
+                    // 显示VIP额外次数标签
+                    const vipBonusElement = document.getElementById('vipBonus');
+                    if (isVip) {
+                        vipBonusElement.style.display = 'inline-block';
+                    } else {
+                        vipBonusElement.style.display = 'none';
+                    }
+                    
+                    // 如果是VIP用户，更新限制信息
+                    if (isVip) {
+                        const limitText = document.querySelector('.card-footer p:last-child small');
+                        limitText.textContent = '普通用户每天最多可捡起20个漂流瓶，VIP用户每天可捡30个，次数在每天0点自动刷新！';
+                    }
+                    
+                    // 更新按钮状态
+                    updatePickButton(data.pick_remaining <= 0);
+                    
+                    // 调试信息
+                    Logger.log("每日限制数据:", data);
+                    Logger.log(`用户状态: ${isVip ? 'VIP会员' : '普通用户'}, 今日剩余捡瓶次数: ${data.pick_remaining}/${pickLimit}`);
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+        
+        // 获取已捡起的漂流瓶数量
+        function getPickedBottlesCount() {
+            fetch('api.php/user_picked_bottles')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const bottleCount = data.bottles.length;
+                    document.getElementById('totalPickedCount').textContent = `已捡起: ${bottleCount} 个`;
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+        
+        // 更新已捡起数量
+        function updatePickedCount() {
+            const countElement = document.getElementById('totalPickedCount');
+            const currentCount = parseInt(countElement.textContent.match(/\d+/)[0]);
+            countElement.textContent = `已捡起: ${currentCount + 1} 个`;
+        }
+        
+        // 更新捡瓶按钮状态
+        function updatePickButton(disable) {
+            const pickBtn = document.getElementById('pickBottleBtn');
+            if (disable) {
+                pickBtn.disabled = true;
+                pickBtn.innerHTML = '<i class="fas fa-ban"></i> 今日已达上限';
+            } else {
+                pickBtn.disabled = false;
+                pickBtn.innerHTML = '<i class="fas fa-search"></i> 随机捡一个漂流瓶';
+            }
+        }
+        
+        // 显示捡到的漂流瓶
+        function displayBottle(bottle) {
+            const container = document.querySelector('.bottle-container');
+            
+            // 格式化时间
+            const throwTime = new Date(bottle.throw_time).toLocaleString();
+            
+            // 获取表情
+            let moodEmoji = '';
+            switch (bottle.mood) {
+                case '开心': moodEmoji = '😊'; break;
+                case '难过': moodEmoji = '😢'; break;
+                case '平静': moodEmoji = '😌'; break;
+                case '愤怒': moodEmoji = '😡'; break;
+                case '期待': moodEmoji = '🤩'; break;
+                case '忧郁': moodEmoji = '😔'; break;
+                default: moodEmoji = '😶';
+            }
+            
+            // 处理用户名显示（非匿名用户名可点击）
+            const usernameDisplay = !bottle.is_anonymous ? 
+                `<a href="user_profile.html?id=${bottle.user_id}" class="text-primary username-link">${bottle.username}</a>` : 
+                `<span class="text-primary">${bottle.username}</span>`;
+            
+            let html = `
+                <div class="bottle-card p-4 border rounded bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            ${usernameDisplay}
+                            <span class="badge bg-secondary ms-2">${bottle.gender}</span>
+                            <span class="badge bg-info ms-2">${bottle.mood} ${moodEmoji}</span>
+                            ${bottle.is_vip ? '<span class="badge bg-warning text-dark ms-2"><i class="fas fa-crown"></i> VIP会员</span>' : ''}
+                        </div>
+                        <small class="text-muted">${throwTime}</small>
+                    </div>
+                    
+                    <div class="bottle-content mb-3">
+                        <p>${bottle.content}</p>
+                        ${bottle.signature ? `<p class="text-muted small fst-italic mt-2">——${bottle.signature}</p>` : ''}
+                    </div>
+                    
+                    ${displayLocationInfo(bottle)}
+                    
+                    <div class="bottle-actions d-flex justify-content-between align-items-center">
+                        <div>
+                            <button class="btn btn-sm ${bottle.has_liked ? 'btn-danger' : 'btn-outline-danger'} like-btn" data-id="${bottle.id}">
+                                <i class="fas fa-heart"></i> 
+                                <span class="like-count">${bottle.like_count}</span>
+                            </button>
+                        </div>
+                        
+                        <div class="ms-2">
+                            <button class="btn btn-sm btn-success comment-btn" data-id="${bottle.id}" data-bs-toggle="collapse" data-bs-target="#commentForm">
+                                <i class="fas fa-comment"></i> 评论并扔回大海
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="collapse mt-3" id="commentForm">
+                        <form id="bottleCommentForm" data-id="${bottle.id}">
+                            <div class="mb-3">
+                                <textarea class="form-control" id="commentContent" rows="3" placeholder="写下你的评论..."></textarea>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">发送评论</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            
+            // 如果有评论，显示评论区
+            if (bottle.comments && bottle.comments.length > 0) {
+                html += `<div class="comments-section mt-4">
+                    <h5>评论 (${bottle.comments.length})</h5>
+                    <div class="comments-list">`;
+                
+                bottle.comments.forEach(comment => {
+                    html += `
+                        <div class="comment-item p-2 mb-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <a href="user_profile.html?id=${comment.user_id}" class="text-primary username-link">${comment.username}</a>
+                                <small class="text-muted">${new Date(comment.created_at).toLocaleString()}</small>
+                            </div>
+                            <p class="mb-0">${comment.content}</p>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            html += `</div>`;
+            
+            container.innerHTML = html;
+            
+            // 添加点赞事件
+            const likeBtn = container.querySelector('.like-btn');
+            likeBtn.addEventListener('click', function() {
+                const bottleId = this.dataset.id;
+                likeBottle(bottleId, this);
+            });
+            
+            // 添加评论表单提交事件
+            const commentForm = container.querySelector('#bottleCommentForm');
+            commentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const bottleId = this.dataset.id;
+                const content = document.getElementById('commentContent').value.trim();
+                
+                if (content === '') {
+                    showAlert('请输入评论内容', 'danger');
+                    return;
+                }
+                
+                commentAndThrowBottle(bottleId, content);
+            });
+        }
+        
+        // 点赞漂流瓶
+        function likeBottle(bottleId, btnElement) {
+            fetch('api.php/like_bottle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bottle_id: bottleId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const likeCountElement = btnElement.querySelector('.like-count');
+                    let likeCount = parseInt(likeCountElement.textContent);
+                    
+                    if (data.action === 'like') {
+                        likeCount++;
+                        btnElement.classList.remove('btn-outline-danger');
+                        btnElement.classList.add('btn-danger');
+                    } else {
+                        likeCount--;
+                        btnElement.classList.remove('btn-danger');
+                        btnElement.classList.add('btn-outline-danger');
+                    }
+                    
+                    likeCountElement.textContent = likeCount;
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+        
+        // 评论并扔回大海
+        function commentAndThrowBottle(bottleId, content) {
+            fetch('api.php/comment_bottle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bottle_id: bottleId, content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('评论成功，漂流瓶已重新扔回大海', 'success');
+                    
+                    // 清空评论区和漂流瓶
+                    document.querySelector('.bottle-container').innerHTML = '';
+                    
+                    // 重新启用捡瓶按钮
+                    const pickBtn = document.getElementById('pickBottleBtn');
+                    pickBtn.disabled = false;
+                    pickBtn.innerHTML = '<i class="fas fa-search"></i> 随机捡一个漂流瓶';
+                    
+                    // 更新剩余次数
+                    getDailyLimits();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                Logger.error('Error:', error);
+                showAlert('评论失败，请稍后再试', 'danger');
+            });
+        }
+        
+        // 显示位置和IP信息
+        function displayLocationInfo(bottle) {
+            if (!bottle.ip_address && !bottle.location) {
+                return '';
+            }
+            
+            let html = '<div class="location-info small text-muted mb-3">';
+            
+            if (bottle.location) {
+                html += `<p><i class="fas fa-map-marker-alt"></i> ${bottle.location}</p>`;
+            }
+            
+            if (bottle.ip_address) {
+                html += `<p><i class="fas fa-globe"></i> IP: ${bottle.ip_address}</p>`;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // 检查VIP状态
+        function checkVipStatus() {
+            fetch('api.php/check_vip_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 保存VIP状态到全局对象
+                    if (!window.userInfo) window.userInfo = {};
+                    window.userInfo.is_vip = data.is_vip;
+                    window.userInfo.vip_level = data.vip_level;
+                    window.userInfo.vip_expire_date = data.vip_expire_date;
+                    
+                    // 如果是VIP用户，更新UI显示
+                    if (data.is_vip) {
+                        // 可以在这里添加VIP专属UI元素
+                        const cardHeader = document.querySelector('.card-header h2');
+                        cardHeader.innerHTML = `捡一个漂流瓶 <span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP模式</span>`;
+                    }
+                }
+            })
+            .catch(error => Logger.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
