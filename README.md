@@ -51,7 +51,7 @@
 
 ```bash
 # 克隆仓库（如果使用Git）
-git clone [仓库地址] /path/to/web/driftbottle
+git clone https://github.com/kggzs/Driftbottle /path/to/web/driftbottle
 # 或直接下载源码包解压到网站目录
 ```
 
