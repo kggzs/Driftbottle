@@ -95,9 +95,91 @@ function getCurrentUserId() {
 
 // 安全过滤输入
 function sanitizeInput($data) {
+    if (!is_string($data)) {
+        return '';
+    }
     $data = trim($data);
     $data = stripslashes($data);
-    $data = htmlspecialchars($data);
+    $data = htmlspecialchars($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return $data;
+}
+
+// 安全过滤HTML内容（允许基本HTML标签但过滤危险内容）
+function sanitizeHtml($data) {
+    if (!is_string($data)) {
+        return '';
+    }
+    
+    // 使用更强大的Security类中的purifyHtml方法
+    // 但保留这个函数以保持兼容性
+    if (class_exists('Security')) {
+        return Security::purifyHtml($data);
+    }
+    
+    $data = trim($data);
+    $data = stripslashes($data);
+    
+    // 允许的HTML标签
+    $allowedTags = '<p><br><b><i><u><em><strong><span><div><ul><ol><li><h1><h2><h3><h4><h5><h6>';
+    $data = strip_tags($data, $allowedTags);
+    
+    // 过滤所有标签属性中的事件处理程序
+    $data = preg_replace('/(<[^>]+?)on[a-z]+=[^>]*/i', '$1', $data);
+    
+    // 过滤JavaScript伪协议
+    $data = preg_replace('/javascript:/i', '', $data);
+    
+    // 过滤其他可能的危险协议
+    $data = preg_replace('/vbscript:|data:/i', '', $data);
+    
+    return $data;
+}
+
+// 过滤并返回安全的URL
+function sanitizeUrl($url) {
+    if (!is_string($url)) {
+        return '';
+    }
+    
+    $url = trim($url);
+    // 只允许http和https协议
+    if (!preg_match('/^(http|https):\/\//i', $url)) {
+        // 如果没有协议，添加http://
+        $url = 'http://' . $url;
+    }
+    
+    // 过滤JavaScript伪协议
+    if (preg_match('/javascript:/i', $url)) {
+        return '';
+    }
+    
+    // 过滤其他可能的危险协议
+    if (preg_match('/(vbscript:|data:|about:|file:|blob:)/i', $url)) {
+        return '';
+    }
+    
+    return filter_var($url, FILTER_SANITIZE_URL);
+}
+
+// 过滤SQL注入
+function sanitizeSql($data, $conn = null) {
+    if (!is_string($data)) {
+        return '';
+    }
+    
+    if ($conn === null) {
+        $conn = getDbConnection();
+        $shouldClose = true;
+    } else {
+        $shouldClose = false;
+    }
+    
+    $data = $conn->real_escape_string($data);
+    
+    if ($shouldClose) {
+        $conn->close();
+    }
+    
     return $data;
 }
 ?> 

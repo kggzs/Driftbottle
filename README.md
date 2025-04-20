@@ -202,6 +202,10 @@ driftbottle/
 
 如有问题或建议，请联系QQ：1724464998
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=kggzs/Driftbottle&type=Date)](https://www.star-history.com/#kggzs/Driftbottle&Date)
+
 ## 📄 许可证
 
 本项目采用MIT许可证。详情请参阅 `LICENSE` 文件。 

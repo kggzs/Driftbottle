@@ -259,6 +259,10 @@ class Security {
      * @return bool 如果检测到恶意输入，返回true
      */
     public static function detectMaliciousInput($input) {
+        if (!is_string($input)) {
+            return false;
+        }
+        
         // 检测常见的XSS攻击模式
         $xssPatterns = [
             '/(<script[^>]*>.*?<\/script>)/is',
@@ -268,7 +272,20 @@ class Security {
             '/(document\.location)/is',
             '/(document\.write)/is',
             '/(eval\s*\()/is',
-            '/(alert\s*\()/is'
+            '/(alert\s*\()/is',
+            '/(prompt\s*\()/is',
+            '/(confirm\s*\()/is',
+            '/(\bdata:text\/html)/is',
+            '/(\bdata:application\/javascript)/is',
+            '/(\bexpression\s*\()/is',
+            '/(\<iframe)/is',
+            '/(\<embed)/is',
+            '/(\<object)/is',
+            '/(\<meta)/is',
+            '/(\<base)/is',
+            '/(\<form)/is',
+            '/(\<applet)/is',
+            '/(\<link)/is'
         ];
         
         foreach ($xssPatterns as $pattern) {
@@ -286,7 +303,14 @@ class Security {
             '/(DROP\s+TABLE)/is',
             '/(DELETE\s+FROM)/is',
             '/(UPDATE\s+\w+\s+SET)/is',
-            '/(INTO\s+OUTFILE)/is'
+            '/(INTO\s+OUTFILE)/is',
+            '/(SLEEP\s*\()/is',
+            '/(BENCHMARK\s*\()/is',
+            '/(WAITFOR\s+DELAY)/is',
+            '/(;\s*SELECT)/is',
+            '/(;\s*INSERT)/is',
+            '/(;\s*UPDATE)/is',
+            '/(;\s*DELETE)/is'
         ];
         
         foreach ($sqlInjectionPatterns as $pattern) {
@@ -297,5 +321,87 @@ class Security {
         }
         
         return false;
+    }
+    
+    /**
+     * 高级HTML净化，用于内容富文本
+     * @param string $html HTML内容
+     * @return string 过滤后的HTML
+     */
+    public static function purifyHtml($html) {
+        if (!is_string($html)) {
+            return '';
+        }
+        
+        // 步骤1: 基本清理
+        $html = trim($html);
+        $html = stripslashes($html);
+        
+        // 步骤2: 只允许特定的HTML标签
+        $allowedTags = '<p><br><b><i><u><em><strong><span><div><ul><ol><li><h1><h2><h3><h4><h5><h6><pre><code><blockquote><q><hr><table><thead><tbody><tr><th><td>';
+        $html = strip_tags($html, $allowedTags);
+        
+        // 步骤3: 清除所有标签属性中的事件处理程序
+        $html = preg_replace('/(<[^>]+?)on\w+\s*=\s*["\'][^"\']*["\']?/i', '$1', $html);
+        
+        // 步骤4: 清除所有标签中的style属性（或者仅保留安全的style）
+        $html = preg_replace('/(<[^>]+?)style\s*=\s*["\'][^"\']*["\']?/i', '$1', $html);
+        
+        // 步骤5: 清除所有a标签的危险href值
+        $html = preg_replace('/<a\s+[^>]*href\s*=\s*["\']?(javascript:|data:|vbscript:)[^"\']*["\']?[^>]*>/i', '', $html);
+        
+        // 步骤6: 清除其他可能的危险协议
+        $html = preg_replace('/(javascript:|data:|vbscript:|expression:)/i', '', $html);
+        
+        // 步骤7: 删除注释
+        $html = preg_replace('/<!--(.|\s)*?-->/', '', $html);
+        
+        // 步骤8: 删除XML处理指令
+        $html = preg_replace('/<\?(.|\s)*?\?>/', '', $html);
+        
+        // 步骤9: 删除CDATA部分
+        $html = preg_replace('/<!\[CDATA\[(.|\s)*?\]\]>/', '', $html);
+        
+        return $html;
+    }
+    
+    /**
+     * 过滤JSON数据，防止XSS攻击
+     * @param mixed $data 需要过滤的数据
+     * @return mixed 过滤后的数据
+     */
+    public static function sanitizeJsonData($data) {
+        if (is_string($data)) {
+            // 对字符串应用HTML实体转换
+            return htmlspecialchars($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        } elseif (is_array($data)) {
+            // 递归处理数组
+            foreach ($data as $key => $value) {
+                $data[$key] = self::sanitizeJsonData($value);
+            }
+        } elseif (is_object($data)) {
+            // 递归处理对象
+            foreach ($data as $key => $value) {
+                $data->$key = self::sanitizeJsonData($value);
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * 安全的输出JSON数据
+     * @param mixed $data 要输出的数据
+     * @param bool $sanitize 是否对数据进行过滤
+     */
+    public static function outputJson($data, $sanitize = true) {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        if ($sanitize) {
+            $data = self::sanitizeJsonData($data);
+        }
+        
+        echo json_encode($data);
+        exit;
     }
 } 

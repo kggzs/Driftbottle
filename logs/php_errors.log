@@ -211,3 +211,94 @@
 [20-Apr-2025 22:42:01 Asia/Shanghai] 已使用次数: 0
 [20-Apr-2025 22:42:01 Asia/Shanghai] 普通免费剩余: 10
 [20-Apr-2025 22:42:01 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:45 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:45 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:45 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:45 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:46 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:46 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:46 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:46 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:47 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:47 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:47 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:47 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:47 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:47 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:47 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:47 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:47 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:55 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:55 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:55 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:55 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:57 Asia/Shanghai] ------- 签到请求开始 -------
+[20-Apr-2025 23:05:57 Asia/Shanghai] 用户ID: 5
+[20-Apr-2025 23:05:57 Asia/Shanghai] 请求时间: 2025-04-20 23:05:57
+[20-Apr-2025 23:05:57 Asia/Shanghai] 客户端IP: 127.0.0.1
+[20-Apr-2025 23:05:57 Asia/Shanghai] 用户代理: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0
+[20-Apr-2025 23:05:57 Asia/Shanghai] 调用userCheckin函数...
+[20-Apr-2025 23:05:57 Asia/Shanghai] 开始执行userCheckin函数，用户ID: 5
+[20-Apr-2025 23:05:57 Asia/Shanghai] 准备开始事务处理
+[20-Apr-2025 23:05:57 Asia/Shanghai] 事务开始成功
+[20-Apr-2025 23:05:57 Asia/Shanghai] 检查用户是否今日已签到
+[20-Apr-2025 23:05:57 Asia/Shanghai] 获取昨天的签到记录
+[20-Apr-2025 23:05:57 Asia/Shanghai] 检查用户VIP状态
+[20-Apr-2025 23:05:57 Asia/Shanghai] 用户是VIP，额外奖励20积分
+[20-Apr-2025 23:05:57 Asia/Shanghai] 插入今天的签到记录
+[20-Apr-2025 23:05:57 Asia/Shanghai] 签到记录插入成功，开始更新用户积分
+[20-Apr-2025 23:05:57 Asia/Shanghai] 记录积分历史
+[20-Apr-2025 23:05:57 Asia/Shanghai] 会话中的积分已更新: 38
+[20-Apr-2025 23:05:57 Asia/Shanghai] 所有操作完成，准备提交事务
+[20-Apr-2025 23:05:57 Asia/Shanghai] 事务提交成功
+[20-Apr-2025 23:05:57 Asia/Shanghai] 签到成功，返回结果
+[20-Apr-2025 23:05:57 Asia/Shanghai] userCheckin函数调用完成，结果: 成功
+[20-Apr-2025 23:05:57 Asia/Shanghai] 响应内容: {"success":true,"consecutive_days":1,"points_earned":30,"is_weekly_bonus":false,"is_vip":true,"vip_bonus_points":20}
+[20-Apr-2025 23:05:57 Asia/Shanghai] ------- 签到请求结束 -------
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:05:59 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:05:59 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:05:59 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:06:00 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:06:00 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:06:00 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:06:00 Asia/Shanghai] VIP专属剩余: 5
+[20-Apr-2025 23:06:00 Asia/Shanghai] VIP用户 5 的免费次数使用情况：
+[20-Apr-2025 23:06:00 Asia/Shanghai] 已使用次数: 0
+[20-Apr-2025 23:06:00 Asia/Shanghai] 普通免费剩余: 10
+[20-Apr-2025 23:06:00 Asia/Shanghai] VIP专属剩余: 5

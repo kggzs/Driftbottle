@@ -3,18 +3,17 @@ require_once 'includes/config.php';
 require_once 'includes/user.php';
 require_once 'includes/bottle.php';
 require_once 'includes/ip_location.php';
+require_once 'includes/security.php';
+require_once 'includes/validator.php';
+
+// 初始化安全中间件
+Security::init();
 
 // 设置头信息为JSON
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// 如果是OPTIONS请求，直接返回
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 
 // 获取请求路径
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -34,22 +33,76 @@ if ($data === null) {
     $data = array_merge($_GET, $_POST);
 }
 
+// 对所有输入参数进行基本的恶意检测
+$maliciousInput = false;
+foreach ($data as $key => $value) {
+    if (is_string($value) && Security::detectMaliciousInput($value)) {
+        $maliciousInput = true;
+        // 记录攻击尝试
+        $ipAddress = getClientIpAddress();
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        $requestData = json_encode($data);
+        error_log("检测到可能的攻击尝试 - IP: $ipAddress, UA: $userAgent, 数据: $requestData");
+        break;
+    }
+}
+
+if ($maliciousInput) {
+    http_response_code(403);
+    Security::outputJson(['success' => false, 'message' => '检测到可能的恶意输入']);
+    exit();
+}
+
+// 跨域预检请求处理
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 $response = [];
 
 // 处理不同的API端点
 switch ($endpoint) {
     case 'register':
         if ($requestMethod === 'POST') {
-            $username = sanitizeInput($data['username'] ?? '');
-            $password = sanitizeInput($data['password'] ?? '');
-            $gender = sanitizeInput($data['gender'] ?? '');
+            // 定义验证规则
+            $rules = [
+                'username' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'min_length' => 3,
+                    'max_length' => 20,
+                    'pattern' => '/^[a-zA-Z0-9_\x{4e00}-\x{9fa5}]+$/u',
+                    'message' => '用户名必须是3-20个字符，只能包含字母、数字、下划线和中文'
+                ],
+                'password' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'min_length' => 6,
+                    'message' => '密码长度至少为6个字符'
+                ],
+                'gender' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'message' => '性别必须是男或女'
+                ]
+            ];
             
-            if (empty($username) || empty($password) || empty($gender)) {
-                $response = ['success' => false, 'message' => '所有字段都是必填的'];
-            } else if ($gender !== '男' && $gender !== '女') {
-                $response = ['success' => false, 'message' => '性别必须是男或女'];
+            // 验证输入
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
             } else {
-                $response = registerUser($username, $password, $gender);
+                $username = $validation['data']['username'];
+                $password = $validation['data']['password'];
+                $gender = $validation['data']['gender'];
+                
+                if ($gender !== '男' && $gender !== '女') {
+                    $response = ['success' => false, 'message' => '性别必须是男或女'];
+                } else {
+                    $response = registerUser($username, $password, $gender);
+                }
             }
         } else {
             $response = ['success' => false, 'message' => '请求方法不支持'];
@@ -58,12 +111,28 @@ switch ($endpoint) {
         
     case 'login':
         if ($requestMethod === 'POST') {
-            $username = sanitizeInput($data['username'] ?? '');
-            $password = sanitizeInput($data['password'] ?? '');
+            // 定义验证规则
+            $rules = [
+                'username' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'message' => '用户名不能为空'
+                ],
+                'password' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'message' => '密码不能为空'
+                ]
+            ];
             
-            if (empty($username) || empty($password)) {
-                $response = ['success' => false, 'message' => '用户名和密码不能为空'];
+            // 验证输入
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
             } else {
+                $username = $validation['data']['username'];
+                $password = $validation['data']['password'];
                 $response = loginUser($username, $password);
             }
         } else {
@@ -105,13 +174,32 @@ switch ($endpoint) {
         if (!isLoggedIn()) {
             $response = ['success' => false, 'message' => '请先登录'];
         } else if ($requestMethod === 'POST') {
-            $content = sanitizeInput($data['content'] ?? '');
-            $isAnonymous = isset($data['is_anonymous']) ? (int)$data['is_anonymous'] : 0;
-            $mood = sanitizeInput($data['mood'] ?? '其他');
+            // 定义验证规则
+            $rules = [
+                'content' => [
+                    'required' => true,
+                    'filter' => 'html',
+                    'max_length' => MAX_BOTTLE_LENGTH,
+                    'message' => '漂流瓶内容不能为空且不能超过' . MAX_BOTTLE_LENGTH . '字符'
+                ],
+                'is_anonymous' => [
+                    'filter' => 'int'
+                ],
+                'mood' => [
+                    'filter' => 'string'
+                ]
+            ];
             
-            if (empty($content)) {
-                $response = ['success' => false, 'message' => '漂流瓶内容不能为空'];
+            // 验证输入
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
             } else {
+                $content = $validation['data']['content'];
+                $isAnonymous = isset($validation['data']['is_anonymous']) ? (int)$validation['data']['is_anonymous'] : 0;
+                $mood = $validation['data']['mood'] ?? '其他';
+                
                 $response = createBottle(getCurrentUserId(), $content, $isAnonymous, $mood);
             }
         } else {
@@ -133,12 +221,30 @@ switch ($endpoint) {
         if (!isLoggedIn()) {
             $response = ['success' => false, 'message' => '请先登录'];
         } else if ($requestMethod === 'POST') {
-            $bottleId = (int)($data['bottle_id'] ?? 0);
-            $content = sanitizeInput($data['content'] ?? '');
+            // 定义验证规则
+            $rules = [
+                'bottle_id' => [
+                    'required' => true,
+                    'filter' => 'int',
+                    'message' => '漂流瓶ID不能为空'
+                ],
+                'content' => [
+                    'required' => true,
+                    'filter' => 'html',
+                    'max_length' => MAX_COMMENT_LENGTH,
+                    'message' => '评论内容不能为空且不能超过' . MAX_COMMENT_LENGTH . '字符'
+                ]
+            ];
             
-            if (empty($content) || $bottleId <= 0) {
-                $response = ['success' => false, 'message' => '评论内容和漂流瓶ID不能为空'];
+            // 验证输入
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
             } else {
+                $bottleId = $validation['data']['bottle_id'];
+                $content = $validation['data']['content'];
+                
                 $response = commentAndThrowBottle($bottleId, getCurrentUserId(), $content);
             }
         } else {
@@ -246,8 +352,25 @@ switch ($endpoint) {
         if (!isLoggedIn()) {
             $response = ['success' => false, 'message' => '请先登录'];
         } else if ($requestMethod === 'POST') {
-            $signature = sanitizeInput($data['signature'] ?? '');
-            $response = updateUserSignature(getCurrentUserId(), $signature);
+            // 定义验证规则
+            $rules = [
+                'signature' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'max_length' => MAX_SIGNATURE_LENGTH,
+                    'message' => '个性签名不能为空且不能超过' . MAX_SIGNATURE_LENGTH . '字符'
+                ]
+            ];
+            
+            // 验证输入
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
+            } else {
+                $signature = $validation['data']['signature'];
+                $response = updateUserSignature(getCurrentUserId(), $signature);
+            }
         } else {
             $response = ['success' => false, 'message' => '请求方法不支持'];
         }
@@ -590,11 +713,41 @@ switch ($endpoint) {
         }
         break;
         
+    case 'update_profile':
+        if (!isLoggedIn()) {
+            $response = ['success' => false, 'message' => '请先登录'];
+        } else if ($requestMethod === 'POST') {
+            $fields = [
+                'nickname' => sanitizeInput($data['nickname'] ?? ''),
+                'birthday' => sanitizeInput($data['birthday'] ?? ''),
+                'location' => sanitizeInput($data['location'] ?? ''),
+                'bio' => sanitizeHtml($data['bio'] ?? ''),
+                'avatar' => sanitizeInput($data['avatar'] ?? ''),
+                'website' => sanitizeUrl($data['website'] ?? ''),
+                'social_media' => sanitizeUrl($data['social_media'] ?? '')
+            ];
+            $response = updateUserProfile(getCurrentUserId(), $fields);
+        } else {
+            $response = ['success' => false, 'message' => '请求方法不支持'];
+        }
+        break;
+        
+    case 'get_csrf_token':
+        // 生成并返回CSRF令牌
+        $token = Security::generateCsrfToken();
+        $response = ['success' => true, 'token' => $token];
+        break;
+        
     default:
         $response = ['success' => false, 'message' => '未找到API端点'];
         break;
 }
 
-// 返回JSON响应
-echo json_encode($response);
+// 在函数结束前，安全地输出JSON响应
+if (!empty($response)) {
+    Security::outputJson($response);
+} else {
+    Security::outputJson(['success' => false, 'message' => '未知错误']);
+}
+exit();
 ?> 
