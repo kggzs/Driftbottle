@@ -122,10 +122,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit_user') {
                     points = ?, 
                     is_vip = ?, 
                     vip_level = ?, 
-                    vip_expire_date = ? 
+                    vip_expire_date = ?,
+                    status = ?
                     WHERE id = ?";
     $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("ssiissi", $username, $signature, $points, $is_vip, $vip_level, $vip_expire_date, $userId);
+    $status = isset($_POST['status']) ? (int)$_POST['status'] : 1;
+    $updateStmt->bind_param("ssiisii", $username, $signature, $points, $is_vip, $vip_level, $vip_expire_date, $status, $userId);
     
     if ($updateStmt->execute()) {
         // 记录日志
@@ -197,6 +199,15 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                 <div class="mb-3">
                     <label class="form-label">积分</label>
                     <p class="form-control"><?php echo $user['points']; ?></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">账号状态</label>
+                    <p class="form-control">
+                        <span class="badge bg-<?php echo $user['status'] ? 'success' : 'danger'; ?>">
+                            <?php echo $user['status'] ? '启用' : '禁用'; ?>
+                        </span>
+                    </p>
                 </div>
                 
                 <div class="mb-3">
@@ -426,6 +437,13 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                                 <input type="date" class="form-control" id="vip_expire_date" name="vip_expire_date" value="<?php echo $user['vip_expire_date'] ? date('Y-m-d', strtotime($user['vip_expire_date'])) : date('Y-m-d', strtotime('+1 year')); ?>">
                             </div>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">账号状态</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="1" <?php echo $user['status'] ? 'selected' : ''; ?>>启用</option>
+                            <option value="0" <?php echo !$user['status'] ? 'selected' : ''; ?>>禁用</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
