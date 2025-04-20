@@ -29,6 +29,7 @@ if (isset($_GET['action'])) {
             $points = (int)($_POST['points'] ?? 0);
             $is_vip = isset($_POST['is_vip']) ? 1 : 0;
             $vip_level = (int)($_POST['vip_level'] ?? 0);
+            $status = isset($_POST['status']) ? (int)$_POST['status'] : 1;
             
             // 验证数据
             $errors = [];
@@ -62,8 +63,8 @@ if (isset($_GET['action'])) {
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $vip_expire_date = $is_vip ? date('Y-m-d', strtotime('+1 year')) : null;
                 
-                $insertStmt = $conn->prepare("INSERT INTO users (username, password, gender, signature, points, is_vip, vip_level, vip_expire_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $insertStmt->bind_param("ssssiiss", $username, $hashedPassword, $gender, $signature, $points, $is_vip, $vip_level, $vip_expire_date);
+                $insertStmt = $conn->prepare("INSERT INTO users (username, password, gender, signature, points, is_vip, vip_level, vip_expire_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt->bind_param("ssssiissi", $username, $hashedPassword, $gender, $signature, $points, $is_vip, $vip_level, $vip_expire_date, $status);
                 
                 if ($insertStmt->execute()) {
                     $newUserId = $conn->insert_id;
@@ -169,6 +170,45 @@ if (isset($_GET['action'])) {
         
         $updateStmt->close();
     }
+    
+    // 禁用/启用用户账号
+    if ($action === 'toggle_status' && isset($_GET['id'])) {
+        $userId = (int)$_GET['id'];
+        
+        // 获取当前状态
+        $statusStmt = $conn->prepare("SELECT status, username FROM users WHERE id = ?");
+        $statusStmt->bind_param("i", $userId);
+        $statusStmt->execute();
+        $result = $statusStmt->get_result();
+        $userData = $result->fetch_assoc();
+        $currentStatus = $userData['status'];
+        $username = $userData['username'];
+        $statusStmt->close();
+        
+        // 反转状态
+        $newStatus = $currentStatus ? 0 : 1;
+        
+        $updateStmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+        $updateStmt->bind_param("ii", $newStatus, $userId);
+        
+        if ($updateStmt->execute()) {
+            // 记录操作日志
+            $statusText = $newStatus ? '启用' : '禁用';
+            $admin->logOperation('用户', '账号状态修改', "用户: $username (ID: $userId), $statusText 账号");
+            
+            $message = "用户 $username 的账号已" . ($newStatus ? '启用' : '禁用');
+            $messageType = 'success';
+            
+            // 重定向以避免刷新页面重复提交
+            header("Location: users.php?message=" . urlencode($message) . "&type=$messageType");
+            exit;
+        } else {
+            $message = '操作失败: ' . $conn->error;
+            $messageType = 'danger';
+        }
+        
+        $updateStmt->close();
+    }
 }
 
 // 从URL参数获取消息
@@ -181,6 +221,7 @@ if (isset($_GET['message'])) {
 $search = sanitizeInput($_GET['search'] ?? '');
 $gender = sanitizeInput($_GET['gender'] ?? '');
 $vip = isset($_GET['vip']) ? (int)$_GET['vip'] : -1;
+$status = isset($_GET['status']) ? (int)$_GET['status'] : -1;
 $sortBy = sanitizeInput($_GET['sort_by'] ?? 'id');
 $sortOrder = sanitizeInput($_GET['sort_order'] ?? 'desc');
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -209,6 +250,12 @@ if (!empty($gender)) {
 if ($vip >= 0) {
     $where[] = "is_vip = ?";
     $params[] = $vip;
+    $types .= 'i';
+}
+
+if ($status >= 0) {
+    $where[] = "status = ?";
+    $params[] = $status;
     $types .= 'i';
 }
 
@@ -324,6 +371,14 @@ $admin->logOperation('用户', '查看', '查看用户列表');
                     <option value="0" <?php echo $vip === 0 ? 'selected' : ''; ?>>否</option>
                 </select>
             </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">账号状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="-1">全部</option>
+                    <option value="1" <?php echo isset($_GET['status']) && (int)$_GET['status'] === 1 ? 'selected' : ''; ?>>启用</option>
+                    <option value="0" <?php echo isset($_GET['status']) && (int)$_GET['status'] === 0 ? 'selected' : ''; ?>>禁用</option>
+                </select>
+            </div>
             <div class="col-md-3">
                 <label for="sort_by" class="form-label">排序</label>
                 <div class="input-group">
@@ -403,6 +458,13 @@ $admin->logOperation('用户', '查看', '查看用户列表');
                     <?php endfor; ?>
                 </select>
             </div>
+            <div class="col-md-6">
+                <label for="status" class="form-label">账号状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="1" <?php echo !isset($_POST['status']) || (int)$_POST['status'] === 1 ? 'selected' : ''; ?>>启用</option>
+                    <option value="0" <?php echo isset($_POST['status']) && (int)$_POST['status'] === 0 ? 'selected' : ''; ?>>禁用</option>
+                </select>
+            </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-primary">创建用户</button>
                 <a href="users.php" class="btn btn-secondary">取消</a>
@@ -453,6 +515,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li><button class="dropdown-item batch-action" data-action="vip">设为VIP</button></li>
                 <li><button class="dropdown-item batch-action" data-action="cancel-vip">取消VIP</button></li>
                 <li><hr class="dropdown-divider"></li>
+                <li><button class="dropdown-item batch-action" data-action="enable">启用账号</button></li>
+                <li><button class="dropdown-item batch-action" data-action="disable">禁用账号</button></li>
+                <li><hr class="dropdown-divider"></li>
                 <li><button class="dropdown-item batch-action text-danger" data-action="delete">删除</button></li>
             </ul>
         </div>
@@ -475,6 +540,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <th>签名</th>
                             <th>积分</th>
                             <th>VIP状态</th>
+                            <th>账号状态</th>
                             <th>注册时间</th>
                             <th>操作</th>
                         </tr>
@@ -503,6 +569,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <?php endif; ?>
                                 </td>
+                                <td>
+                                    <span class="badge bg-<?php echo $user['status'] ? 'success' : 'secondary'; ?>">
+                                        <?php echo $user['status'] ? '启用' : '禁用'; ?>
+                                    </span>
+                                </td>
                                 <td><?php echo date('Y-m-d', strtotime($user['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group">
@@ -511,6 +582,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </a>
                                         <a href="users.php?action=toggle_vip&id=<?php echo $user['id']; ?>" class="btn btn-sm btn-<?php echo $user['is_vip'] ? 'warning' : 'success'; ?>" title="<?php echo $user['is_vip'] ? '取消VIP' : '设为VIP'; ?>">
                                             <i class="bi bi-star<?php echo $user['is_vip'] ? '-fill' : ''; ?>"></i>
+                                        </a>
+                                        <a href="users.php?action=toggle_status&id=<?php echo $user['id']; ?>" class="btn btn-sm btn-<?php echo $user['status'] ? 'secondary' : 'primary'; ?>" title="<?php echo $user['status'] ? '禁用账号' : '启用账号'; ?>">
+                                            <i class="bi bi-<?php echo $user['status'] ? 'lock' : 'unlock'; ?>"></i>
                                         </a>
                                         <a href="users.php?action=delete&id=<?php echo $user['id']; ?>" class="btn btn-sm btn-danger" title="删除用户">
                                             <i class="bi bi-trash"></i>
@@ -534,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
                 <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                    <a class="page-link" href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?><?php echo !empty($gender) ? '&gender=' . urlencode($gender) : ''; ?><?php echo $vip >= 0 ? '&vip=' . $vip : ''; ?><?php echo !empty($sortBy) ? '&sort_by=' . $sortBy : ''; ?><?php echo !empty($sortOrder) ? '&sort_order=' . $sortOrder : ''; ?>" aria-label="Previous">
+                    <a class="page-link" href="?page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?><?php echo !empty($gender) ? '&gender=' . urlencode($gender) : ''; ?><?php echo $vip >= 0 ? '&vip=' . $vip : ''; ?><?php echo $status >= 0 ? '&status=' . $status : ''; ?><?php echo !empty($sortBy) ? '&sort_by=' . $sortBy : ''; ?><?php echo !empty($sortOrder) ? '&sort_order=' . $sortOrder : ''; ?>" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -544,26 +618,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 $endPage = min($totalPages, $page + 2);
                 
                 if ($startPage > 1) {
-                    echo '<li class="page-item"><a class="page-link" href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">1</a></li>';
+                    echo '<li class="page-item"><a class="page-link" href="?page=1' . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . ($status >= 0 ? '&status=' . $status : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">1</a></li>';
                     if ($startPage > 2) {
                         echo '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
                     }
                 }
                 
                 for ($i = $startPage; $i <= $endPage; $i++) {
-                    echo '<li class="page-item ' . ($page == $i ? 'active' : '') . '"><a class="page-link" href="?page=' . $i . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">' . $i . '</a></li>';
+                    echo '<li class="page-item ' . ($page == $i ? 'active' : '') . '"><a class="page-link" href="?page=' . $i . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . ($status >= 0 ? '&status=' . $status : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">' . $i . '</a></li>';
                 }
                 
                 if ($endPage < $totalPages) {
                     if ($endPage < $totalPages - 1) {
                         echo '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
                     }
-                    echo '<li class="page-item"><a class="page-link" href="?page=' . $totalPages . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">' . $totalPages . '</a></li>';
+                    echo '<li class="page-item"><a class="page-link" href="?page=' . $totalPages . (!empty($search) ? '&search=' . urlencode($search) : '') . (!empty($gender) ? '&gender=' . urlencode($gender) : '') . ($vip >= 0 ? '&vip=' . $vip : '') . ($status >= 0 ? '&status=' . $status : '') . (!empty($sortBy) ? '&sort_by=' . $sortBy : '') . (!empty($sortOrder) ? '&sort_order=' . $sortOrder : '') . '">' . $totalPages . '</a></li>';
                 }
                 ?>
                 
                 <li class="page-item <?php echo $page >= $totalPages ? 'disabled' : ''; ?>">
-                    <a class="page-link" href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?><?php echo !empty($gender) ? '&gender=' . urlencode($gender) : ''; ?><?php echo $vip >= 0 ? '&vip=' . $vip : ''; ?><?php echo !empty($sortBy) ? '&sort_by=' . $sortBy : ''; ?><?php echo !empty($sortOrder) ? '&sort_order=' . $sortOrder : ''; ?>" aria-label="Next">
+                    <a class="page-link" href="?page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?><?php echo !empty($gender) ? '&gender=' . urlencode($gender) : ''; ?><?php echo $vip >= 0 ? '&vip=' . $vip : ''; ?><?php echo $status >= 0 ? '&status=' . $status : ''; ?><?php echo !empty($sortBy) ? '&sort_by=' . $sortBy : ''; ?><?php echo !empty($sortOrder) ? '&sort_order=' . $sortOrder : ''; ?>" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
