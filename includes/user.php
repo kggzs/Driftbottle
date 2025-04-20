@@ -40,13 +40,20 @@ function registerUser($username, $password, $gender) {
 function loginUser($username, $password) {
     $conn = getDbConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, password, gender, points, signature, is_vip, vip_expire_date, vip_level FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, username, password, gender, points, signature, is_vip, vip_expire_date, vip_level, status FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
+        
+        // 检查账号是否被禁用
+        if ($user['status'] == 0) {
+            $stmt->close();
+            $conn->close();
+            return ['success' => false, 'message' => '您的账号已被禁用，请联系管理员'];
+        }
         
         if (password_verify($password, $user['password'])) {
             // 检查VIP是否过期
@@ -76,6 +83,7 @@ function loginUser($username, $password) {
             $_SESSION['signature'] = $user['signature'];
             $_SESSION['is_vip'] = $user['is_vip'];
             $_SESSION['vip_level'] = $user['vip_level'];
+            $_SESSION['status'] = $user['status'];
             
             $stmt->close();
             $conn->close();

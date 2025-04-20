@@ -51,7 +51,7 @@
 
 ```bash
 # 克隆仓库（如果使用Git）
-git clone https://github.com/kggzs/Driftbottle /path/to/web/driftbottle
+git clone [仓库地址] /path/to/web/driftbottle
 # 或直接下载源码包解压到网站目录
 ```
 
@@ -201,7 +201,7 @@ driftbottle/
 ## 📫 联系与支持
 
 如有问题或建议，请联系QQ：1724464998
-[![Star History Chart](https://api.star-history.com/svg?repos=kggzs/Driftbottle&type=Date)](https://www.star-history.com/#kggzs/Driftbottle&Date)
+
 ## 📄 许可证
 
-本项目采用 MIT 许可证。详情请参阅 [LICENSE](./LICENSE) 文件。
+本项目采用MIT许可证。详情请参阅 `LICENSE` 文件。 

@@ -2,7 +2,7 @@ location / {
     try_files $uri $uri/ /index.html;
 }
 
-# 重写API请求到api.php
+# ??��API??????api.php
 #location ~ ^/api\.php/(.*)$ {
 #    fastcgi_pass 127.0.0.1:9000;
 #    include fastcgi_params;
@@ -14,54 +14,54 @@ location ~ ^/api/(.*)$ {
     rewrite ^/api/(.*)$ /api.php/$1 last;
 }
 
-# PHP文件处理
+# PHP???????
 location ~ \.php$ {
     fastcgi_pass 127.0.0.1:9000;
     fastcgi_index index.php;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     
-    # 支持PATH_INFO
+    # ???PATH_INFO
     fastcgi_split_path_info ^(.+\.php)(/.+)$;
     fastcgi_param PATH_INFO $fastcgi_path_info;
 }
 
-# 静态资源缓存设置
+# ??????????????
 location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)$ {
     expires 7d;
     add_header Cache-Control "public, max-age=604800";
 }
 
-# 字体文件跨域支持
+# ??????????????
 location ~* \.(ttf|otf|eot|woff|woff2)$ {
     add_header Access-Control-Allow-Origin "*";
     expires 30d;
     add_header Cache-Control "public, max-age=2592000";
 }
 
-# admin目录的安全控制
+# admin??????????
 location ^~ /admin/ {
-    # 可选：IP限制
+    # ?????IP????
     # allow 127.0.0.1;
     # deny all;
     
     try_files $uri $uri/ /admin/index.php$is_args$args;
 }
 
-# 阻止访问隐藏文件
+# ??????????????
 location ~ /\. {
     deny all;
     access_log off;
     log_not_found off;
 }
 
-# 阻止直接访问includes目录
+# ?????????includes??
 location ^~ /includes/ {
     deny all;
     return 403;
 }
 
-# 安全头设置
+# ????????
 add_header X-Content-Type-Options "nosniff";
 add_header X-XSS-Protection "1; mode=block";
 add_header X-Frame-Options "SAMEORIGIN";

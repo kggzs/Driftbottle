@@ -1,0 +1,37 @@
+# 防止列出目录内容
+Options -Indexes
+
+# 设置默认文档
+DirectoryIndex index.php
+
+# 限制直接访问includes目录下的文件
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
+
+# 设置安全头信息
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'"
+</IfModule>
+
+# 禁止访问特定文件类型
+<FilesMatch "^(\.htaccess|\.htpasswd|\.git|\.env|\.gitignore|composer\.json|composer\.lock)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# PHP 安全设置
+<IfModule mod_php7.c>
+    php_flag display_errors off
+    php_flag log_errors on
+    php_value error_log ../logs/php_errors.log
+    php_flag allow_url_fopen off
+    php_flag allow_url_include off
+    php_flag session.cookie_httponly on
+    php_flag session.cookie_secure on
+    php_flag session.use_only_cookies on
+</IfModule>
