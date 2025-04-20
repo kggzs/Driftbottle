@@ -155,6 +155,78 @@ switch ($action) {
         }
         break;
         
+    // 启用账号
+    case 'enable':
+        try {
+            // 构建问号占位符
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            $sql = "UPDATE users SET status = 1 WHERE id IN ($placeholders)";
+            
+            // 准备语句
+            $stmt = $conn->prepare($sql);
+            
+            // 绑定参数类型
+            $types = str_repeat('i', count($userIds));
+            
+            // 绑定参数值
+            $stmt->bind_param($types, ...$userIds);
+            
+            // 执行更新
+            if ($stmt->execute()) {
+                $count = $stmt->affected_rows;
+                $message = "成功启用 $count 个用户账号！";
+                $messageType = 'success';
+                
+                // 记录操作日志
+                $admin->logOperation('用户', '批量启用账号', "启用用户IDs: " . implode(', ', $userIds));
+            } else {
+                $message = "操作失败: " . $conn->error;
+                $messageType = 'danger';
+            }
+            
+            $stmt->close();
+        } catch (Exception $e) {
+            $message = "操作异常: " . $e->getMessage();
+            $messageType = 'danger';
+        }
+        break;
+        
+    // 禁用账号
+    case 'disable':
+        try {
+            // 构建问号占位符
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            $sql = "UPDATE users SET status = 0 WHERE id IN ($placeholders)";
+            
+            // 准备语句
+            $stmt = $conn->prepare($sql);
+            
+            // 绑定参数类型
+            $types = str_repeat('i', count($userIds));
+            
+            // 绑定参数值
+            $stmt->bind_param($types, ...$userIds);
+            
+            // 执行更新
+            if ($stmt->execute()) {
+                $count = $stmt->affected_rows;
+                $message = "成功禁用 $count 个用户账号！";
+                $messageType = 'success';
+                
+                // 记录操作日志
+                $admin->logOperation('用户', '批量禁用账号', "禁用用户IDs: " . implode(', ', $userIds));
+            } else {
+                $message = "操作失败: " . $conn->error;
+                $messageType = 'danger';
+            }
+            
+            $stmt->close();
+        } catch (Exception $e) {
+            $message = "操作异常: " . $e->getMessage();
+            $messageType = 'danger';
+        }
+        break;
+        
     default:
         $message = "未知操作";
         $messageType = 'warning';
