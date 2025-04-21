@@ -15,7 +15,9 @@ const api = {
         }
         
         try {
-            const response = await fetch(`api.php/${endpoint}`, options);
+            // 改用传统的GET参数格式代替伪静态
+            const url = `api.php?action=${endpoint}`;
+            const response = await fetch(url, options);
             
             // 检查响应状态
             if (!response.ok) {
@@ -100,6 +102,11 @@ const api = {
     // 获取公告列表
     async getAnnouncements() {
         return await this.request('get_announcements', 'GET');
+    },
+    
+    // 获取网站基本设置
+    async getBasicSettings() {
+        return await this.request('get_basic_settings', 'GET');
     }
 };
 
@@ -187,9 +194,93 @@ const utils = {
 // 全局用户信息
 window.userInfo = null;
 
+// 全局网站设置
+window.siteSettings = null;
+
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // 打印当前页面路径，帮助调试
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        document.title = '[DEBUG] ' + document.title;
+        console.log('======= 页面初始化开始 =======');
+        console.log('当前页面路径:', window.location.pathname);
+        console.log('当前页面名称:', currentPage);
+        
+        // 加载网站基本设置
+        await loadSiteSettings();
+        
+        // 初始化导航栏
+        await utils.updateNavBar();
+        
+        // 根据当前页面执行不同的初始化函数
+        if (currentPage === 'index.html' || currentPage === '') {
+            console.log('初始化首页');
+            await announcements.init();
+        } else if (currentPage === 'register.html') {
+            console.log('初始化注册页面');
+            initRegisterPage();
+        } else if (currentPage === 'login.html') {
+            console.log('初始化登录页面');
+            initLoginPage();
+        } else if (currentPage === 'throw.html') {
+            console.log('初始化扔漂流瓶页面');
+            await initThrowBottlePage();
+        } else if (currentPage === 'pick.html') {
+            console.log('初始化捡漂流瓶页面');
+            await initPickBottlePage();
+        } else if (currentPage === 'profile.html') {
+            console.log('初始化个人中心页面');
+            await initProfilePage();
+        } else {
+            console.log('未知页面，不执行特定初始化');
+        }
+        
+        console.log('======= 页面初始化完成 =======');
+    } catch (error) {
+        console.error('页面初始化出错:', error.message, error.stack);
+    }
+});
+
+// 加载网站基本设置
+async function loadSiteSettings() {
+    try {
+        const response = await api.getBasicSettings();
+        if (response.success) {
+            window.siteSettings = response.settings;
+            
+            // 更新页面标题
+            if (window.siteSettings.SITE_NAME) {
+                // 更新网站名称
+                updateSiteName(window.siteSettings.SITE_NAME);
+            }
+        }
+    } catch (error) {
+        console.error('加载网站设置失败:', error);
+    }
+}
+
+// 更新网站名称
+function updateSiteName(siteName) {
+    // 更新页面标题
+    document.title = document.title.replace('漂流瓶', siteName);
+    
+    // 更新导航栏品牌名称
+    const navbarBrand = document.querySelector('.navbar-brand');
+    if (navbarBrand) {
+        navbarBrand.textContent = siteName;
+    }
+    
+    // 更新其他可能包含网站名称的元素
+    const siteNameElements = document.querySelectorAll('.site-name');
+    siteNameElements.forEach(el => {
+        el.textContent = siteName;
+    });
+}
+
 // 检查用户登录状态
 function checkAuth(callback) {
-    fetch('api.php/check_auth')
+    fetch('api.php?action=check_auth')
     .then(response => response.json())
     .then(data => {
         if (data.success && data.loggedIn) {
@@ -260,7 +351,7 @@ function initNavbar() {
         document.getElementById('logoutBtn').addEventListener('click', function(e) {
             e.preventDefault();
             
-            fetch('api.php/logout')
+            fetch('api.php?action=logout')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -288,7 +379,7 @@ function initNavbar() {
 
 // 加载用户漂流瓶
 function loadUserBottles() {
-    fetch('api.php/user_bottles')
+    fetch('api.php?action=user_bottles')
     .then(response => response.json())
     .then(data => {
         const container = document.querySelector('.bottles-container');
@@ -349,7 +440,7 @@ function loadUserBottles() {
 
 // 加载用户捡到的漂流瓶
 function loadUserPickedBottles() {
-    fetch('api.php/user_picked_bottles')
+    fetch('api.php?action=user_picked_bottles')
     .then(response => response.json())
     .then(data => {
         const container = document.querySelector('.picked-bottles-container');
@@ -485,108 +576,130 @@ const announcements = {
     }
 };
 
-// 在页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 初始化日志工具
-    Logger.init();
-    
-    // 更新导航栏
-    utils.updateNavBar();
-    
-    // 初始化公告系统
-    announcements.init();
-    
-    // 注册页面初始化
-    if (document.querySelector('#registerForm')) {
-        initRegisterPage();
-    }
-    
-    // 登录页面初始化
-    if (document.querySelector('#loginForm')) {
-        initLoginPage();
-    }
-    
-    // 扔漂流瓶页面初始化
-    if (document.querySelector('#throwBottleForm')) {
-        initThrowBottlePage();
-    }
-    
-    // 捡漂流瓶页面初始化
-    if (document.querySelector('#pickBottleBtn')) {
-        initPickBottlePage();
-    }
-    
-    // 个人中心页面初始化
-    if (document.querySelector('.profile-container')) {
-        initProfilePage();
-    }
-});
-
 // 初始化注册页面
 function initRegisterPage() {
+    console.log('开始初始化注册页面...');
     const registerForm = document.getElementById('registerForm');
     
+    // 如果表单不存在，则退出
+    if (!registerForm) {
+        console.log('注册表单不存在，退出初始化');
+        return;
+    }
+    
+    console.log('注册表单存在，添加提交事件监听器');
     registerForm.addEventListener('submit', async (e) => {
+        console.log('注册表单提交事件触发');
         e.preventDefault();
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const gender = document.querySelector('input[name="gender"]:checked')?.value;
-        
-        // 简单验证
-        if (!username || !password || !confirmPassword || !gender) {
-            utils.showAlert('请填写所有字段', 'danger');
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            utils.showAlert('两次输入的密码不一致', 'danger');
-            return;
-        }
-        
-        // 发送注册请求
-        const response = await api.register(username, password, gender);
-        
-        if (response.success) {
-            utils.showAlert('注册成功，即将跳转到登录页面', 'success');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        } else {
-            utils.showAlert(response.message || '注册失败，请稍后再试', 'danger');
+        try {
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirm_password');
+            const genderEl = document.querySelector('input[name="gender"]:checked');
+            
+            console.log('表单元素检查:');
+            console.log('- username元素:', username ? '存在' : '不存在');
+            console.log('- password元素:', password ? '存在' : '不存在');
+            console.log('- confirm_password元素:', confirmPassword ? '存在' : '不存在');
+            console.log('- 已选中的gender元素:', genderEl ? '存在' : '不存在');
+            
+            const usernameValue = username ? username.value : null;
+            const passwordValue = password ? password.value : null;
+            const confirmPasswordValue = confirmPassword ? confirmPassword.value : null;
+            const gender = genderEl ? genderEl.value : null;
+            
+            // 简单验证
+            if (!usernameValue || !passwordValue || !confirmPasswordValue || !gender) {
+                console.log('表单验证失败，有字段为空');
+                utils.showAlert('请填写所有字段', 'danger');
+                return;
+            }
+            
+            if (passwordValue !== confirmPasswordValue) {
+                console.log('密码不匹配');
+                utils.showAlert('两次输入的密码不一致', 'danger');
+                return;
+            }
+            
+            console.log('表单验证成功，发送注册请求');
+            // 发送注册请求
+            const response = await api.register(usernameValue, passwordValue, gender);
+            
+            if (response.success) {
+                console.log('注册成功');
+                utils.showAlert('注册成功，即将跳转到登录页面', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                console.log('注册失败:', response.message);
+                utils.showAlert(response.message || '注册失败，请稍后再试', 'danger');
+            }
+        } catch (error) {
+            console.error('注册过程中发生错误:', error);
+            utils.showAlert('注册过程中发生错误', 'danger');
         }
     });
+    
+    console.log('注册页面初始化完成');
 }
 
 // 初始化登录页面
 function initLoginPage() {
+    console.log('开始初始化登录页面...');
     const loginForm = document.getElementById('loginForm');
     
+    // 如果表单不存在，则退出
+    if (!loginForm) {
+        console.log('登录表单不存在，退出初始化');
+        return;
+    }
+    
+    console.log('登录表单存在，添加提交事件监听器');
     loginForm.addEventListener('submit', async (e) => {
+        console.log('登录表单提交事件触发');
         e.preventDefault();
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        // 简单验证
-        if (!username || !password) {
-            utils.showAlert('请填写用户名和密码', 'danger');
-            return;
-        }
-        
-        // 发送登录请求
-        const response = await api.login(username, password);
-        
-        if (response.success) {
-            utils.showAlert('登录成功，即将跳转到首页', 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        } else {
-            utils.showAlert(response.message || '登录失败，请检查用户名和密码', 'danger');
+        try {
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            
+            console.log('表单元素检查:');
+            console.log('- username元素:', username ? '存在' : '不存在');
+            console.log('- password元素:', password ? '存在' : '不存在');
+            
+            const usernameValue = username ? username.value : null;
+            const passwordValue = password ? password.value : null;
+            
+            // 简单验证
+            if (!usernameValue || !passwordValue) {
+                console.log('表单验证失败，有字段为空');
+                utils.showAlert('请填写用户名和密码', 'danger');
+                return;
+            }
+            
+            console.log('表单验证成功，发送登录请求');
+            // 发送登录请求
+            const response = await api.login(usernameValue, passwordValue);
+            
+            if (response.success) {
+                console.log('登录成功');
+                utils.showAlert('登录成功，即将跳转到首页', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } else {
+                console.log('登录失败:', response.message);
+                utils.showAlert(response.message || '登录失败，请检查用户名和密码', 'danger');
+            }
+        } catch (error) {
+            console.error('登录过程中发生错误:', error);
+            utils.showAlert('登录过程中发生错误', 'danger');
         }
     });
+    
+    console.log('登录页面初始化完成');
 }
 
 // 初始化扔漂流瓶页面
@@ -595,6 +708,12 @@ async function initThrowBottlePage() {
     if (!(await utils.checkLogin())) return;
     
     const throwBottleForm = document.getElementById('throwBottleForm');
+    
+    // 如果表单不存在，则退出
+    if (!throwBottleForm) {
+        console.log('扔漂流瓶表单不存在');
+        return;
+    }
     
     throwBottleForm.addEventListener('submit', async (e) => {
         e.preventDefault();

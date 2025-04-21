@@ -39,7 +39,7 @@
                                         <i class="fas fa-info-circle text-primary"></i> 
                                         今日还可捡起: <span id="pickRemaining">--</span>/<span id="pickLimit">20</span> 个漂流瓶
                                         <span id="vipBonus" class="badge bg-warning text-dark ms-2" style="display: none;">
-                                            <i class="fas fa-crown"></i> VIP额外次数: +10/天
+                                            <i class="fas fa-crown"></i> VIP额外次数: +<span id="vipExtraCount">10</span>/天
                                         </span>
                                     </p>
                                 </div>
@@ -88,6 +88,11 @@
     <script>
         // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
+            // 默认配置常量（后续会从API获取）
+            window.DAILY_PICK_LIMIT = 20;
+            window.VIP_DAILY_PICK_LIMIT = 30;
+            window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
+            
             // 检查登录状态
             checkAuth(function(isLoggedIn) {
                 if (!isLoggedIn) {
@@ -95,17 +100,37 @@
                     return;
                 }
                 
-                // 检查用户VIP状态
-                checkVipStatus();
-                
-                // 获取用户限制信息
-                getDailyLimits();
-                
-                // 获取已捡起的瓶子数量
-                getPickedBottlesCount();
-                
-                // 初始化捡瓶页面
-                initPickBottlePage();
+                // 获取系统配置常量
+                fetch('api.php/get_system_config')
+                .then(response => response.json())
+                .then(config => {
+                    if (config.success) {
+                        // 更新配置常量
+                        window.DAILY_PICK_LIMIT = config.DAILY_PICK_LIMIT || window.DAILY_PICK_LIMIT;
+                        window.VIP_DAILY_PICK_LIMIT = config.VIP_DAILY_PICK_LIMIT || window.VIP_DAILY_PICK_LIMIT;
+                        window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
+                        
+                        // 更新VIP额外次数显示
+                        const vipExtraCount = document.getElementById('vipExtraCount');
+                        if (vipExtraCount) {
+                            vipExtraCount.textContent = window.VIP_PICK_EXTRA;
+                        }
+                    }
+                })
+                .catch(error => Logger.error('获取系统配置失败:', error))
+                .finally(() => {
+                    // 检查用户VIP状态
+                    checkVipStatus();
+                    
+                    // 获取用户限制信息
+                    getDailyLimits();
+                    
+                    // 获取已捡起的瓶子数量
+                    getPickedBottlesCount();
+                    
+                    // 初始化捡瓶页面
+                    initPickBottlePage();
+                });
             });
         });
         
@@ -116,7 +141,7 @@
             .then(data => {
                 if (data.success) {
                     const isVip = data.is_vip;
-                    const pickLimit = isVip ? 30 : 20;
+                    const pickLimit = isVip ? window.VIP_DAILY_PICK_LIMIT : window.DAILY_PICK_LIMIT;
                     
                     document.getElementById('pickRemaining').textContent = data.pick_remaining;
                     document.getElementById('pickLimit').textContent = pickLimit;
@@ -129,10 +154,10 @@
                         vipBonusElement.style.display = 'none';
                     }
                     
-                    // 如果是VIP用户，更新限制信息
-                    if (isVip) {
-                        const limitText = document.querySelector('.card-footer p:last-child small');
-                        limitText.textContent = '普通用户每天最多可捡起20个漂流瓶，VIP用户每天可捡30个，次数在每天0点自动刷新！';
+                    // 更新页脚提示信息
+                    const limitText = document.querySelector('.card-footer p:last-child small');
+                    if (limitText) {
+                        limitText.textContent = `普通用户每天最多可捡起${window.DAILY_PICK_LIMIT}个漂流瓶，VIP用户每天可捡${window.VIP_DAILY_PICK_LIMIT}个，次数在每天0点自动刷新！`;
                     }
                     
                     // 更新按钮状态

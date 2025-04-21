@@ -430,12 +430,12 @@ switch ($endpoint) {
         } else {
             $limits = getUserDailyLimits(getCurrentUserId());
             $isVip = $limits['is_vip'];
-            $pickLimit = $isVip ? 30 : 20; // VIP用户30次，普通用户20次
+            $pickLimit = $isVip ? VIP_DAILY_PICK_LIMIT : DAILY_PICK_LIMIT; // 使用配置常量
             
             $response = [
                 'success' => true, 
                 'limits' => $limits,
-                'throw_remaining' => 10 - $limits['throw_count'],
+                'throw_remaining' => DAILY_BOTTLE_LIMIT - $limits['throw_count'],
                 'pick_remaining' => $pickLimit - $limits['pick_count'],
                 'free_throws_remaining' => $limits['free_throws_remaining'],
                 'is_vip' => $limits['is_vip'],
@@ -474,19 +474,19 @@ switch ($endpoint) {
                 $pointsNeeded = 0;
                 switch ($months) {
                     case 1:
-                        $pointsNeeded = 100;
+                        $pointsNeeded = VIP_POINTS_1_MONTH;
                         break;
                     case 3:
-                        $pointsNeeded = 250;
+                        $pointsNeeded = VIP_POINTS_3_MONTHS;
                         break;
                     case 6:
-                        $pointsNeeded = 450;
+                        $pointsNeeded = VIP_POINTS_6_MONTHS;
                         break;
                     case 12:
-                        $pointsNeeded = 800;
+                        $pointsNeeded = VIP_POINTS_12_MONTHS;
                         break;
                     default:
-                        $pointsNeeded = $months * 100;
+                        $pointsNeeded = $months * VIP_POINTS_1_MONTH;
                 }
                 
                 // 检查用户积分是否足够
@@ -510,13 +510,13 @@ switch ($endpoint) {
                     // 更新会话中的VIP信息
                     $_SESSION['is_vip'] = 1;
                     $_SESSION['vip_level'] = $level;
-                    $_SESSION['vip_expire_date'] = $userInfo['vip_expire_date'];
-                    $_SESSION['points'] = $userInfo['points'];
+                    $_SESSION['vip_expire_date'] = $userInfo['user']['vip_expire_date'];
+                    $_SESSION['points'] = $userInfo['user']['points'];
                     
                     $response = [
                         'success' => true, 
                         'message' => "恭喜，您已成功开通{$months}个月VIP会员！已扣除{$pointsNeeded}积分",
-                        'vip_expire_date' => $userInfo['vip_expire_date'],
+                        'vip_expire_date' => $userInfo['user']['vip_expire_date'],
                         'points_deducted' => $pointsNeeded,
                         'remaining_points' => $_SESSION['points']
                     ];
@@ -635,6 +635,20 @@ switch ($endpoint) {
         }
         break;
         
+    case 'get_system_config':
+        // 获取系统配置常量
+        $response = [
+            'success' => true,
+            'POINTS_PER_BOTTLE' => POINTS_PER_BOTTLE,
+            'DAILY_BOTTLE_LIMIT' => DAILY_BOTTLE_LIMIT,
+            'VIP_DAILY_BOTTLE_LIMIT' => VIP_DAILY_BOTTLE_LIMIT,
+            'DAILY_PICK_LIMIT' => DAILY_PICK_LIMIT,
+            'VIP_DAILY_PICK_LIMIT' => VIP_DAILY_PICK_LIMIT,
+            'MAX_BOTTLE_LENGTH' => MAX_BOTTLE_LENGTH,
+            'MAX_COMMENT_LENGTH' => MAX_COMMENT_LENGTH
+        ];
+        break;
+        
     case 'get_debug_mode':
         $response = [
             'success' => true,
@@ -652,6 +666,32 @@ switch ($endpoint) {
                 'POINTS_PER_VIP_CHECKIN' => POINTS_PER_VIP_CHECKIN,
                 'POINTS_PER_BOTTLE' => POINTS_PER_BOTTLE,
                 'POINTS_PER_LIKE' => POINTS_PER_LIKE
+            ]
+        ];
+        break;
+        
+    case 'get_limits_config':
+        // 返回系统中的次数限制配置信息
+        $response = [
+            'success' => true,
+            'config' => [
+                'DAILY_BOTTLE_LIMIT' => DAILY_BOTTLE_LIMIT,
+                'DAILY_PICK_LIMIT' => DAILY_PICK_LIMIT,
+                'VIP_DAILY_BOTTLE_LIMIT' => VIP_DAILY_BOTTLE_LIMIT,
+                'VIP_DAILY_PICK_LIMIT' => VIP_DAILY_PICK_LIMIT
+            ]
+        ];
+        break;
+        
+    case 'get_vip_points_config':
+        // 返回VIP会员开通积分配置
+        $response = [
+            'success' => true,
+            'config' => [
+                'VIP_POINTS_1_MONTH' => VIP_POINTS_1_MONTH,
+                'VIP_POINTS_3_MONTHS' => VIP_POINTS_3_MONTHS,
+                'VIP_POINTS_6_MONTHS' => VIP_POINTS_6_MONTHS,
+                'VIP_POINTS_12_MONTHS' => VIP_POINTS_12_MONTHS
             ]
         ];
         break;
@@ -736,6 +776,17 @@ switch ($endpoint) {
         // 生成并返回CSRF令牌
         $token = Security::generateCsrfToken();
         $response = ['success' => true, 'token' => $token];
+        break;
+        
+    case 'get_basic_settings':
+        // 返回网站基本设置
+        $response = [
+            'success' => true,
+            'settings' => [
+                'SITE_NAME' => SITE_NAME,
+                'SITE_URL' => SITE_URL
+            ]
+        ];
         break;
         
     default:

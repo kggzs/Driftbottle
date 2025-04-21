@@ -26,33 +26,10 @@ define('DB_USER', 'root');
 define('DB_PASS', 'root');
 define('DB_NAME', 'driftbottle');
 
-// 其他系统配置
-define('SITE_NAME', '漂流瓶');
-define('SITE_URL', 'http://localhost');
-define('ADMIN_EMAIL', 'kggzs@vip.qq.com');
-
 // 安全配置
 define('SESSION_LIFETIME', 86400); // 会话有效期（秒）
 define('MAX_LOGIN_ATTEMPTS', 5); // 最大登录尝试次数
 define('LOGIN_TIMEOUT', 300); // 登录超时时间（秒）
-
-// 功能限制配置
-define('MAX_BOTTLE_LENGTH', 500); // 漂流瓶内容最大长度
-define('MAX_COMMENT_LENGTH', 200); // 评论最大长度
-define('MAX_SIGNATURE_LENGTH', 50); // 个性签名最大长度
-
-// 积分规则配置
-define('POINTS_PER_CHECKIN', 10); // 每次签到获得积分
-define('POINTS_PER_WEEKLY_CHECKIN', 70); // 连续签到7天额外奖励积分
-define('POINTS_PER_VIP_CHECKIN', 20); // VIP会员每次签到额外获得积分
-define('POINTS_PER_BOTTLE', 1); // 每次扔漂流瓶获得积分
-define('POINTS_PER_LIKE', 1); // 每次收到点赞获得积分
-
-// 每日限制配置
-define('DAILY_BOTTLE_LIMIT', 5); // 普通用户每日扔瓶限制
-define('DAILY_PICK_LIMIT', 5); // 普通用户每日捡瓶限制
-define('VIP_DAILY_BOTTLE_LIMIT', 20); // VIP用户每日扔瓶限制
-define('VIP_DAILY_PICK_LIMIT', 20); // VIP用户每日捡瓶限制
 
 // 创建数据库连接
 function getDbConnection() {
@@ -77,6 +54,78 @@ function getDbConnection() {
         throw $e;
     }
 }
+
+// 从数据库获取设置
+function getSetting($key, $default = '') {
+    try {
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+        $stmt->bind_param("s", $key);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            $value = $row['setting_value'];
+            $stmt->close();
+            $conn->close();
+            return $value;
+        }
+        
+        $stmt->close();
+        $conn->close();
+        return $default;
+    } catch (Exception $e) {
+        error_log("获取设置异常: " . $e->getMessage());
+        // 发生异常时返回默认设置
+        return $default;
+    }
+}
+
+// 更新设置
+function updateSetting($key, $value) {
+    try {
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+        $stmt->bind_param("ss", $value, $key);
+        $result = $stmt->execute();
+        $stmt->close();
+        $conn->close();
+        return $result;
+    } catch (Exception $e) {
+        error_log("更新设置异常: " . $e->getMessage());
+        return false;
+    }
+}
+
+// 定义常量 - 这里我们仍然定义为常量，但值从数据库获取
+// 其他系统配置
+define('SITE_NAME', getSetting('SITE_NAME', '漂流瓶'));
+define('SITE_URL', getSetting('SITE_URL', 'http://localhost'));
+define('ADMIN_EMAIL', getSetting('ADMIN_EMAIL', 'admin@example.com'));
+
+// 功能限制配置
+define('MAX_BOTTLE_LENGTH', (int)getSetting('MAX_BOTTLE_LENGTH', 500));
+define('MAX_COMMENT_LENGTH', (int)getSetting('MAX_COMMENT_LENGTH', 200));
+define('MAX_SIGNATURE_LENGTH', (int)getSetting('MAX_SIGNATURE_LENGTH', 50));
+
+// 积分规则配置
+define('POINTS_PER_CHECKIN', (int)getSetting('POINTS_PER_CHECKIN', 10));
+define('POINTS_PER_WEEKLY_CHECKIN', (int)getSetting('POINTS_PER_WEEKLY_CHECKIN', 70));
+define('POINTS_PER_VIP_CHECKIN', (int)getSetting('POINTS_PER_VIP_CHECKIN', 20));
+define('POINTS_PER_BOTTLE', (int)getSetting('POINTS_PER_BOTTLE', 1));
+define('POINTS_PER_LIKE', (int)getSetting('POINTS_PER_LIKE', 1));
+
+// 每日限制配置
+define('DAILY_BOTTLE_LIMIT', (int)getSetting('DAILY_BOTTLE_LIMIT', 10));
+define('DAILY_PICK_LIMIT', (int)getSetting('DAILY_PICK_LIMIT', 20));
+define('VIP_DAILY_BOTTLE_LIMIT', (int)getSetting('VIP_DAILY_BOTTLE_LIMIT', 15));
+define('VIP_DAILY_PICK_LIMIT', (int)getSetting('VIP_DAILY_PICK_LIMIT', 30));
+
+// VIP会员开通积分配置
+define('VIP_POINTS_1_MONTH', (int)getSetting('VIP_POINTS_1_MONTH', 100));
+define('VIP_POINTS_3_MONTHS', (int)getSetting('VIP_POINTS_3_MONTHS', 250));
+define('VIP_POINTS_6_MONTHS', (int)getSetting('VIP_POINTS_6_MONTHS', 450));
+define('VIP_POINTS_12_MONTHS', (int)getSetting('VIP_POINTS_12_MONTHS', 800));
 
 // 确保会话已启动
 if (session_status() === PHP_SESSION_NONE) {

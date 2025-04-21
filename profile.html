@@ -96,11 +96,8 @@
                                     
                                     <div class="alert alert-warning">
                                         <i class="fas fa-info-circle"></i> VIP特权说明：
-                                        <ul class="mb-0 small">
-                                            <li>普通用户每天可扔5个瓶子、捡5个瓶子</li>
-                                            <li>VIP用户每天可扔20个瓶子、捡20个瓶子</li>
-                                            <li>所有次数限制在每天0点自动刷新</li>
-                                            <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                                        <ul class="mb-0 small" id="vipLimitsInfo">
+                                            <li>加载中...</li>
                                         </ul>
                                     </div>
                                     
@@ -1109,12 +1106,105 @@
                 });
         }
         
+        // 加载次数限制配置
+        function loadLimitsConfig() {
+            fetch('api.php?action=get_limits_config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新页面上的次数限制配置显示
+                        const standardBottleLimit = data.config.DAILY_BOTTLE_LIMIT || 5;
+                        const standardPickLimit = data.config.DAILY_PICK_LIMIT || 5;
+                        const vipBottleLimit = data.config.VIP_DAILY_BOTTLE_LIMIT || 20;
+                        const vipPickLimit = data.config.VIP_DAILY_PICK_LIMIT || 20;
+                        
+                        // 更新VIP特权说明
+                        const vipLimitsInfoElement = document.getElementById('vipLimitsInfo');
+                        if (vipLimitsInfoElement) {
+                            vipLimitsInfoElement.innerHTML = `
+                                <li>普通用户每天可扔${standardBottleLimit}个瓶子、捡${standardPickLimit}个瓶子</li>
+                                <li>VIP用户每天可扔${vipBottleLimit}个瓶子、捡${vipPickLimit}个瓶子</li>
+                                <li>所有次数限制在每天0点自动刷新</li>
+                                <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    Logger.error('获取次数限制配置失败:', error);
+                    // 出错时显示默认值
+                    const vipLimitsInfoElement = document.getElementById('vipLimitsInfo');
+                    if (vipLimitsInfoElement) {
+                        vipLimitsInfoElement.innerHTML = `
+                            <li>普通用户每天可扔5个瓶子、捡5个瓶子</li>
+                            <li>VIP用户每天可扔20个瓶子、捡20个瓶子</li>
+                            <li>所有次数限制在每天0点自动刷新</li>
+                            <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                        `;
+                    }
+                });
+        }
+        
+        // 加载VIP会员价格配置
+        function loadVipPointsConfig() {
+            fetch('api.php?action=get_vip_points_config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新页面上的VIP会员价格显示
+                        const vip1Month = data.config.VIP_POINTS_1_MONTH;
+                        const vip3Months = data.config.VIP_POINTS_3_MONTHS;
+                        const vip6Months = data.config.VIP_POINTS_6_MONTHS;
+                        const vip12Months = data.config.VIP_POINTS_12_MONTHS;
+                        
+                        // 更新按钮上的价格显示
+                        const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+                        vipButtons.forEach(button => {
+                            const months = parseInt(button.getAttribute('data-months'));
+                            let points = 0;
+                            
+                            switch (months) {
+                                case 1:
+                                    points = vip1Month;
+                                    break;
+                                case 3:
+                                    points = vip3Months;
+                                    break;
+                                case 6:
+                                    points = vip6Months;
+                                    break;
+                                case 12:
+                                    points = vip12Months;
+                                    break;
+                            }
+                            
+                            if (points > 0) {
+                                button.setAttribute('data-points', points);
+                                const pointsDisplay = button.querySelector('div:nth-child(2)');
+                                if (pointsDisplay) {
+                                    pointsDisplay.innerHTML = `<i class="fas fa-coins"></i> ${points}积分`;
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    Logger.error('获取VIP会员价格配置失败:', error);
+                });
+        }
+        
         // 页面初始化
         function initProfilePage() {
             Logger.log("页面初始化开始...");
             
             // 加载积分配置
             loadPointsConfig();
+            
+            // 加载次数限制配置
+            loadLimitsConfig();
+            
+            // 加载VIP会员价格配置
+            loadVipPointsConfig();
             
             // 全局用户信息对象
             window.userInfo = {};

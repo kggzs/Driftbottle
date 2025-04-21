@@ -152,11 +152,12 @@ class Admin {
                 $stmt->bind_param("issi", $adminId, $ip, $userAgent, $status);
             } else {
                 // 记录失败登录，用描述字段记录尝试的用户名
-                $stmt = $this->conn->prepare("INSERT INTO admin_login_logs (admin_id, login_ip, user_agent, status) VALUES (0, ?, ?, 0)");
+                $description = "尝试登录用户名: " . $username;
+                $stmt = $this->conn->prepare("INSERT INTO admin_login_logs (admin_id, login_ip, user_agent, status, description) VALUES (0, ?, ?, 0, ?)");
                 if ($stmt === false) {
                     throw new Exception("准备记录登录日志查询失败: " . $this->conn->error);
                 }
-                $stmt->bind_param("ss", $ip, $userAgent);
+                $stmt->bind_param("sss", $ip, $userAgent, $description);
             }
             
             if (!$stmt->execute()) {
@@ -227,32 +228,50 @@ class Admin {
     }
     
     /**
-     * 获取当前登录的管理员ID
-     * 
-     * @return int 管理员ID
+     * 获取当前管理员ID
      */
     public function getCurrentAdminId() {
-        return $this->isLoggedIn() ? $_SESSION['admin_id'] : 0;
+        if ($this->isLoggedIn()) {
+            return $_SESSION['admin_id'];
+        }
+        return 0;
     }
     
     /**
-     * 获取当前登录的管理员用户名
-     * 
-     * @return string 管理员用户名
+     * 获取当前管理员用户名
      */
     public function getCurrentAdminUsername() {
-        return $this->isLoggedIn() ? $_SESSION['admin_username'] : '';
+        if ($this->isLoggedIn()) {
+            return $_SESSION['admin_username'] ?? '';
+        }
+        return '';
     }
     
     /**
      * 获取当前管理员信息
-     * 
-     * @return array 管理员信息
      */
     public function getCurrentAdmin() {
-        // 强制重新加载管理员数据，确保数据是最新的
-        $this->loadAdminData();
+        // 更新登录时间和IP (每次访问都更新)
+        $this->updateLoginInfo();
+        
         return $this->adminData;
+    }
+    
+    /**
+     * 更新最后登录时间和IP
+     */
+    private function updateLoginInfo() {
+        if ($this->isLoggedIn()) {
+            $adminId = $this->getCurrentAdminId();
+            $ip = $_SERVER['REMOTE_ADDR'];
+            
+            $stmt = $this->conn->prepare("UPDATE admins SET last_login_time = NOW(), last_login_ip = ? WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("si", $ip, $adminId);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
     }
     
     /**

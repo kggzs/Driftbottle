@@ -36,14 +36,14 @@
                             <div class="row align-items-center">
                                 <div class="col-md-8">
                                     <div class="user-limits">
-                                        <p class="mb-1"><i class="fas fa-gift text-success"></i> 免费次数剩余: <span id="freeThrowsRemaining">--</span>/10 次</p>
+                                        <p class="mb-1"><i class="fas fa-gift text-success"></i> 免费次数剩余: <span id="freeThrowsRemaining">--</span>/<span id="totalFreeThrows">--</span> 次</p>
                                         <p class="mb-1" id="vipThrowBonus" style="display: none;"><i class="fas fa-crown text-warning"></i> <span class="text-warning">VIP特权：每天额外免费次数（0点刷新）</span></p>
-                                        <p class="mb-1" id="vipFreeThrows"><i class="fas fa-star text-warning"></i> 会员次数剩余: <span id="vipFreeThrowsRemaining">--</span>/5 次</p>
+                                        <p class="mb-1" id="vipFreeThrows"><i class="fas fa-star text-warning"></i> 会员次数剩余: <span id="vipFreeThrowsRemaining">--</span>/<span id="totalVipFreeThrows">--</span> 次</p>
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-end">
                                     <p class="mb-0"><i class="fas fa-coins text-warning"></i> 我的积分: <span id="userPoints">--</span></p>
-                                    <small class="text-muted">每瓶消耗1积分 (免费次数内不消耗)</small>
+                                    <small class="text-muted">每瓶消耗<span id="pointsPerBottle">1</span>积分 (免费次数内不消耗)</small>
                                 </div>
                             </div>
                         </div>
@@ -122,6 +122,11 @@
             // 防止表单重复提交的标记
             let isSubmitting = false;
             
+            // 默认配置常量（后续会从API获取）
+            window.POINTS_PER_BOTTLE = 1;
+            window.DAILY_BOTTLE_LIMIT = 10;
+            window.VIP_DAILY_BOTTLE_LIMIT = 15;
+            
             // 检查登录状态
             checkAuth(function(isLoggedIn) {
                 if (!isLoggedIn) {
@@ -129,14 +134,34 @@
                     return;
                 }
                 
-                // 检查VIP状态
-                checkVipStatus();
+                // 显示每瓶消耗的积分（使用默认值，稍后会被更新）
+                document.getElementById('pointsPerBottle').textContent = window.POINTS_PER_BOTTLE;
                 
-                // 获取用户限制信息
-                getDailyLimits();
-                
-                // 获取地理位置预览
-                getLocationPreview();
+                // 获取系统配置常量
+                fetch('api.php/get_system_config')
+                .then(response => response.json())
+                .then(config => {
+                    if (config.success) {
+                        // 更新配置常量
+                        window.POINTS_PER_BOTTLE = config.POINTS_PER_BOTTLE || window.POINTS_PER_BOTTLE;
+                        window.DAILY_BOTTLE_LIMIT = config.DAILY_BOTTLE_LIMIT || window.DAILY_BOTTLE_LIMIT;
+                        window.VIP_DAILY_BOTTLE_LIMIT = config.VIP_DAILY_BOTTLE_LIMIT || window.VIP_DAILY_BOTTLE_LIMIT;
+                        
+                        // 显示每瓶消耗的积分
+                        document.getElementById('pointsPerBottle').textContent = window.POINTS_PER_BOTTLE;
+                    }
+                })
+                .catch(error => Logger.error('获取系统配置失败:', error))
+                .finally(() => {
+                    // 检查VIP状态
+                    checkVipStatus();
+                    
+                    // 获取用户限制信息
+                    getDailyLimits();
+                    
+                    // 获取地理位置预览
+                    getLocationPreview();
+                });
                 
                 // 表单提交事件 - 使用onclick替代form submit
                 const submitBtn = document.getElementById('throwButton');
@@ -236,6 +261,9 @@
                     const freeThrowsRemaining = Math.max(0, data.free_throws_remaining || 0);
                     document.getElementById('freeThrowsRemaining').textContent = freeThrowsRemaining;
                     
+                    // 显示总的免费次数限制 - 使用全局变量
+                    document.getElementById('totalFreeThrows').textContent = window.DAILY_BOTTLE_LIMIT;
+                    
                     // 获取最新积分
                     fetch('api.php/user_info')
                     .then(response => response.json())
@@ -266,13 +294,18 @@
                             // 使用后端返回的VIP专属剩余次数
                             const vipFreeThrowsRemaining = Math.max(0, data.vip_free_throws_remaining || 0);
                             document.getElementById('vipFreeThrowsRemaining').textContent = vipFreeThrowsRemaining;
+                            
+                            // 显示总的VIP专属次数 - 使用全局变量
+                            const vipExtraLimit = window.VIP_DAILY_BOTTLE_LIMIT - window.DAILY_BOTTLE_LIMIT;
+                            document.getElementById('totalVipFreeThrows').textContent = vipExtraLimit;
+                            
                             Logger.log("VIP专属次数:", vipFreeThrowsRemaining); // 调试信息
                         }
                         
                         // 更新页脚信息
                         const limitInfo = document.querySelector('.card-footer p:last-child small');
                         if (limitInfo) {
-                            limitInfo.textContent = `VIP特权：每天有15次免费扔瓶机会，包括5次专属会员次数。`;
+                            limitInfo.textContent = `VIP特权：每天有${window.VIP_DAILY_BOTTLE_LIMIT}次免费扔瓶机会，包括${window.VIP_DAILY_BOTTLE_LIMIT - window.DAILY_BOTTLE_LIMIT}次专属会员次数。`;
                         }
                     } else {
                         // 非VIP用户隐藏VIP相关信息
@@ -292,7 +325,7 @@
                         if (freeThrowsRemaining <= 0 && (!data.is_vip || data.vip_free_throws_remaining <= 0)) {
                             pointsWarning.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle"></i> 免费次数已用完，将消耗积分</span>';
                         } else {
-                            pointsWarning.textContent = '每瓶消耗1积分 (免费次数内不消耗)';
+                            pointsWarning.textContent = '每瓶消耗' + window.POINTS_PER_BOTTLE + '积分 (免费次数内不消耗)';
                         }
                     }
                 }
@@ -351,7 +384,7 @@
                         // 更新页脚信息
                         const limitInfo = document.querySelector('.card-footer p:last-child small');
                         if (limitInfo) {
-                            limitInfo.textContent = `VIP特权：每天有15次免费扔瓶机会，包括5次专属会员次数。`;
+                            limitInfo.textContent = `VIP特权：每天有${window.VIP_DAILY_BOTTLE_LIMIT}次免费扔瓶机会，包括${window.VIP_DAILY_BOTTLE_LIMIT - window.DAILY_BOTTLE_LIMIT}次专属会员次数。`;
                         }
                         
                         // 更新地理位置信息勾选框

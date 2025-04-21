@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_profile'])) {
         // 更新个人信息
         try {
-            $displayName = sanitizeInput($_POST['display_name']);
+            $displayName = sanitizeInput($_POST['real_name']);
             $email = sanitizeInput($_POST['email']);
             $phone = sanitizeInput($_POST['phone']);
             $adminId = $admin->getCurrentAdminId();
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // 更新数据库
-            $stmt = $conn->prepare("UPDATE admins SET display_name = ?, email = ?, phone = ? WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE admins SET real_name = ?, email = ?, phone = ? WHERE id = ?");
             if ($stmt === false) {
                 throw new Exception("准备SQL语句失败: " . $conn->error);
             }
@@ -51,77 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // 更新成功
             $message = "个人资料已成功更新！";
-            $messageType = "success";
-            
-            // 刷新管理员数据
-            $adminData = $admin->getCurrentAdmin();
-            
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-            $messageType = "danger";
-        }
-    } elseif (isset($_POST['upload_avatar'])) {
-        // 上传头像
-        try {
-            // 检查是否有文件上传
-            if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
-                throw new Exception("头像上传失败，请选择有效的图片文件");
-            }
-            
-            // 获取文件信息
-            $uploadFile = $_FILES['avatar'];
-            $fileName = $uploadFile['name'];
-            $fileTmpName = $uploadFile['tmp_name'];
-            $fileSize = $uploadFile['size'];
-            $fileError = $uploadFile['error'];
-            $fileType = $uploadFile['type'];
-            
-            // 检查文件类型
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!in_array($fileType, $allowedTypes)) {
-                throw new Exception("只允许上传JPG、PNG或GIF格式的图片");
-            }
-            
-            // 检查文件大小 (最大2MB)
-            $maxSize = 2 * 1024 * 1024;
-            if ($fileSize > $maxSize) {
-                throw new Exception("图片大小不能超过2MB");
-            }
-            
-            // 创建上传目录
-            $uploadDir = '../uploads/avatars/';
-            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
-                throw new Exception("无法创建上传目录");
-            }
-            
-            // 生成唯一文件名
-            $adminId = $admin->getCurrentAdminId();
-            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-            $newFileName = 'admin_' . $adminId . '_' . time() . '.' . $extension;
-            $targetPath = $uploadDir . $newFileName;
-            
-            // 移动上传的文件
-            if (!move_uploaded_file($fileTmpName, $targetPath)) {
-                throw new Exception("文件上传失败，请稍后重试");
-            }
-            
-            // 更新数据库中的头像路径
-            $avatarPath = 'uploads/avatars/' . $newFileName;
-            $stmt = $conn->prepare("UPDATE admins SET avatar = ? WHERE id = ?");
-            if ($stmt === false) {
-                throw new Exception("准备SQL语句失败: " . $conn->error);
-            }
-            $stmt->bind_param("si", $avatarPath, $adminId);
-            
-            if (!$stmt->execute()) {
-                throw new Exception("更新头像信息失败: " . $stmt->error);
-            }
-            
-            // 记录操作日志
-            $admin->logOperation('系统', '更新', '更新个人头像');
-            
-            // 更新成功
-            $message = "头像已成功更新！";
             $messageType = "success";
             
             // 刷新管理员数据
@@ -214,16 +143,8 @@ try {
                         <img src="<?php echo $avatarPath; ?>" alt="Admin Avatar" class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
                     </div>
                     
-                    <h5 class="mb-1"><?php echo htmlspecialchars($adminData['display_name'] ?? $adminData['username']); ?></h5>
+                    <h5 class="mb-1"><?php echo htmlspecialchars($adminData['real_name'] ?? $adminData['username']); ?></h5>
                     <p class="text-muted mb-3"><?php echo htmlspecialchars($adminData['role_name'] ?? '管理员'); ?></p>
-                    
-                    <!-- 上传头像表单 -->
-                    <form method="post" enctype="multipart/form-data" class="mb-3">
-                        <div class="input-group mb-3">
-                            <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*" required>
-                            <button class="btn btn-primary" type="submit" name="upload_avatar">上传头像</button>
-                        </div>
-                    </form>
                     
                     <!-- 基本信息 -->
                     <div class="text-start">
@@ -262,8 +183,8 @@ try {
                 <div class="card-body">
                     <form method="post">
                         <div class="mb-3">
-                            <label for="display_name" class="form-label">显示名称</label>
-                            <input type="text" class="form-control" id="display_name" name="display_name" value="<?php echo htmlspecialchars($adminData['display_name'] ?? ''); ?>" required>
+                            <label for="real_name" class="form-label">显示名称</label>
+                            <input type="text" class="form-control" id="real_name" name="real_name" value="<?php echo htmlspecialchars($adminData['real_name'] ?? ''); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">邮箱地址</label>

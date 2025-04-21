@@ -47,17 +47,18 @@ function getUserDailyLimits($userId) {
     $limits['is_vip'] = $isVip;
     $limits['vip_level'] = $vipLevel;
     
-    // 标准免费次数限制
-    $standardFreeLimit = 10;
-    $vipExtraLimit = 5;
+    // 从配置获取免费次数限制
+    $standardFreeLimit = DAILY_BOTTLE_LIMIT; // 普通用户每日免费扔瓶次数
+    $vipFreeLimit = VIP_DAILY_BOTTLE_LIMIT; // VIP用户每日免费扔瓶次数
+    $vipExtraLimit = $vipFreeLimit - $standardFreeLimit; // VIP用户额外次数
     
     // 计算剩余的普通免费次数
     $limits['free_throws_remaining'] = max(0, $standardFreeLimit - $limits['free_throws_used']);
     
     // 计算VIP专属额外次数
     if ($isVip) {
-        // 总免费次数 = 普通免费次数 + VIP额外次数
-        $limits['vip_free_throws'] = $standardFreeLimit + $vipExtraLimit;
+        // 总免费次数 = VIP用户每日免费次数
+        $limits['vip_free_throws'] = $vipFreeLimit;
         
         // 计算VIP专属剩余次数
         if ($limits['free_throws_used'] <= $standardFreeLimit) {
@@ -100,7 +101,7 @@ function updateUserDailyLimit($userId, $type, $increment = 1) {
         $field = 'free_throws_used';
         
         // 增加安全检查，确保免费次数不会超过上限
-        $maxFreeThrows = $limits['is_vip'] ? 15 : 10; // VIP用户15次，普通用户10次
+        $maxFreeThrows = $limits['is_vip'] ? VIP_DAILY_BOTTLE_LIMIT : DAILY_BOTTLE_LIMIT;
         if ($limits['free_throws_used'] >= $maxFreeThrows) {
             $conn->close();
             return false; // 已达到免费次数上限
@@ -127,12 +128,12 @@ function checkUserDailyLimit($userId, $type) {
     if ($type === 'throw') {
         return true; // 移除扔瓶总次数限制
     } else if ($type === 'pick') {
-        // VIP用户每天最多捡30个，非VIP用户最多捡20个
-        $pickLimit = $isVip ? 30 : 20;
+        // VIP用户和非VIP用户的捡瓶限制从配置获取
+        $pickLimit = $isVip ? VIP_DAILY_PICK_LIMIT : DAILY_PICK_LIMIT;
         return $limits['pick_count'] < $pickLimit;
     } else if ($type === 'free_throw') {
-        // VIP用户每天最多免费扔15个，普通用户最多10个
-        $freeThrowLimit = $isVip ? 15 : 10;
+        // VIP用户和非VIP用户的扔瓶限制从配置获取
+        $freeThrowLimit = $isVip ? VIP_DAILY_BOTTLE_LIMIT : DAILY_BOTTLE_LIMIT;
         return $limits['free_throws_used'] < $freeThrowLimit;
     }
     
@@ -219,9 +220,10 @@ function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他') {
     // 如果不是免费的，检查用户是否有足够的积分
     if (!$isFreeThrow) {
         $userPoints = getUserPoints($userId);
-        if ($userPoints < 1) {
+        $requiredPoints = POINTS_PER_BOTTLE;
+        if ($userPoints < $requiredPoints) {
             $conn->close();
-            return ['success' => false, 'message' => '您的积分不足，无法扔出漂流瓶'];
+            return ['success' => false, 'message' => "您的积分不足，扔漂流瓶需要{$requiredPoints}积分，您当前有{$userPoints}积分"];
         }
     }
     
@@ -244,8 +246,9 @@ function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他') {
         if ($isFreeThrow) {
             updateUserDailyLimit($userId, 'free_throw');
         } else {
-            // 不是免费的，扣除1积分
-            updateUserPoints($userId, -1, '扔出漂流瓶');
+            // 不是免费的，扣除积分
+            $pointsDeducted = POINTS_PER_BOTTLE;
+            updateUserPoints($userId, -$pointsDeducted, '扔出漂流瓶');
         }
         
         $conn->close();
@@ -253,7 +256,7 @@ function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他') {
             'success' => true, 
             'bottle_id' => $bottleId,
             'is_free' => $isFreeThrow,
-            'points_deducted' => $isFreeThrow ? 0 : 1
+            'points_deducted' => $isFreeThrow ? 0 : POINTS_PER_BOTTLE
         ];
     } else {
         $stmt->close();
@@ -408,6 +411,10 @@ function commentAndThrowBottle($bottleId, $userId, $content) {
                 $msgStmt->bind_param("iiiis", $bottleOwnerId, $bottleId, $userId, $commentId, $content);
                 $msgStmt->execute();
                 $msgStmt->close();
+                
+                // 给瓶子所有者增加积分，使用与点赞相同的积分值
+                $pointsToAdd = POINTS_PER_LIKE;
+                updateUserPoints($bottleOwnerId, $pointsToAdd, '收到漂流瓶评论');
             }
         }
         $bottleStmt->close();
@@ -491,6 +498,10 @@ function likeBottle($bottleId, $userId) {
                     $msgStmt->bind_param("iiii", $bottleOwnerId, $bottleId, $userId, $likeId);
                     $msgStmt->execute();
                     $msgStmt->close();
+                    
+                    // 给瓶子所有者增加积分
+                    $pointsToAdd = POINTS_PER_LIKE; // 使用系统设置的点赞积分值
+                    updateUserPoints($bottleOwnerId, $pointsToAdd, '收到漂流瓶点赞');
                 }
             }
             $bottleStmt->close();
