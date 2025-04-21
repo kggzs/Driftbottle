@@ -1,373 +1,312 @@
-# Driftbottle - 漂流瓶系统
+# Driftbottle - 漂流瓶系统 🌊
 
-一个基于Web的漂流瓶系统，用户可以扔出自己的漂流瓶，也可以捡起其他用户的漂流瓶，进行交流互动。通过匿名交流，让用户分享心情、寻找共鸣。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PHP Version](https://img.shields.io/badge/PHP-%3E%3D7.3-8892BF.svg)](https://www.php.net/)
+[![MySQL Version](https://img.shields.io/badge/MySQL-%3E%3D5.6-4479A1.svg)](https://www.mysql.com/)
 
-## 🌟 系统概述
+一个基于 Web 的匿名社交漂流瓶系统，让用户可以自由地扔出或捡起漂流瓶，分享心情，寻找共鸣。
 
-漂流瓶系统是一个轻量级的社交平台，专为用户提供一个分享内心感受、结交新朋友的空间。它通过"漂流瓶"这一古老而浪漫的方式，将用户的情感和思考以数字化形式传递到互联网的海洋，等待被他人发现。
+## ✨ 系统概述
 
-系统设计简洁直观，强调用户体验和互动性，同时注重隐私保护和数据安全。无论是想诉说心事、寻求解答，还是只是想与陌生人分享一个有趣的想法，漂流瓶系统都能满足用户多样化的社交需求。
+漂流瓶系统是一个轻量级的社交平台，旨在为用户提供一个安全、匿名的空间来分享内心感受、结交新朋友。它借鉴了“漂流瓶”这一经典概念，将用户的想法和情感以数字化的形式投入互联网的海洋，等待有缘人发现。
 
-## 🌟 功能特点
+系统设计简洁直观，注重用户体验与互动性，同时将用户隐私和数据安全放在首位。无论您是想倾诉心事、寻求建议，还是仅仅想与陌生人分享一个有趣的想法，漂流瓶系统都能满足您的需求。
 
-### 基础功能
-- **用户管理**：注册、登录、个人资料管理
-- **漂流瓶操作**：扔出漂流瓶、捡起漂流瓶、评论、点赞
-- **性别标识**：男性漂流瓶（蓝色）、女性漂流瓶（粉色）
-- **匿名功能**：可选择匿名发送漂流瓶，保护隐私
+## 🚀 主要功能
 
-### 高级功能
-- **VIP会员系统**：购买VIP获取更多特权（发送配额、特殊标识）
-- **签到系统**：每日签到获取积分，连续签到奖励递增
-- **积分系统**：多种方式获取积分，用于系统内特权兑换
-- **个性化设置**：个性签名、用户偏好设置
-- **安全保护**：IP地址记录与隐私保护措施
-- **账号管理**：管理员可封禁违规账号
-- **公告系统**：发布系统公告与重要通知
+### 👤 用户功能
 
-### 安全特性
-- **防XSS攻击**：输入过滤与内容安全策略(CSP)
-- **防SQL注入**：参数化查询与输入验证
-- **防CSRF攻击**：CSRF令牌验证
-- **会话安全**：会话固定攻击防护
-- **数据验证**：严格的前后端数据验证机制
-- **IP保护**：非VIP用户IP地址部分隐藏
+- **注册与登录**：快速创建账户，安全登录。
+- **个人资料**：管理个人信息，设置个性签名。
+- **漂流瓶操作**：
+    - **扔瓶子**：写下心情或想法，投入大海。
+    - **捡瓶子**：随机捡起他人的漂流瓶。
+    - **互动**：评论、点赞漂流瓶。
+    - **记录**：查看自己扔出和捡到的瓶子。
+- **性别标识**：男性漂流瓶 (蓝色 🔵)，女性漂流瓶 (粉色 🌸)。
+- **匿名选项**：可选择匿名发送，保护隐私。
 
-## 📋 技术栈
+### 💎 高级功能
 
-- **前端**：HTML, CSS, JavaScript
-- **后端**：PHP 7.3+
-- **数据库**：MySQL 5.6+
-- **服务器**：Apache/Nginx
+- **VIP 会员**：购买 VIP 享受更多特权（如：更多扔/捡瓶次数、专属标识）。
+- **签到系统**：每日签到获取积分，连续签到有额外奖励。
+- **积分系统**：通过多种方式赚取积分，兑换系统特权。
+- **IP 保护**：VIP 用户 IP 地址完全隐藏，普通用户部分隐藏。
+- **消息中心**：接收系统通知和互动消息。
 
-## 📊 数据库结构
+### 🛡️ 安全特性
 
-系统包含以下主要数据表：
-- `users` - 用户信息
-- `bottles` - 漂流瓶内容
-- `comments` - 评论数据
-- `likes` - 点赞记录
-- `pick_records` - 捡瓶记录
-- `checkins` - 签到记录
-- `points_history` - 积分历史
-- `announcements` - 系统公告
-- `admin_roles` - 管理员角色
-- `admins` - 管理员账号
-- `admin_login_logs` - 管理员登录日志
-- `admin_operation_logs` - 管理员操作日志
-- `daily_limits` - 用户每日限制
-- `messages` - 消息中心
-- `system_settings` - 系统配置
+- **防 XSS 攻击**：严格的输入过滤和内容安全策略 (CSP)。
+- **防 SQL 注入**：使用参数化查询和输入验证。
+- **防 CSRF 攻击**：实施 CSRF 令牌验证。
+- **会话安全**：防止会话固定攻击。
+- **数据验证**：前后端双重数据校验。
 
-## 🚀 安装与部署
+### ⚙️ 管理员功能
 
-### 环境要求
+- **用户管理**：查看、封禁/解封用户，重置密码。
+- **内容管理**：管理漂流瓶、评论，发布公告。
+- **系统设置**：配置基础参数、积分规则、VIP 特权、安全策略。
+- **数据统计**：监控用户活跃度、漂流瓶数据、系统运行状态。
 
-- PHP 7.3+ (推荐 PHP 7.4 或 8.0)
-- MySQL 5.6+ 或 MariaDB 10.3+
-- Web服务器：Apache 2.4+ 或 Nginx 1.18+
-- 确保PHP启用以下扩展：mysqli, mbstring, json
+## 🛠️ 技术栈
 
-### 详细部署步骤
+| 类型     | 技术          |
+| :------- | :------------ |
+| 前端     | HTML, CSS, JavaScript |
+| 后端     | PHP 7.3+      |
+| 数据库   | MySQL 5.6+    |
+| Web 服务器 | Apache/Nginx  |
 
-#### 1. 获取代码
+## 🗄️ 数据库结构
 
-```bash
-# 克隆仓库
-git clone https://github.com/kggzs/Driftbottle /path/to/web/driftbottle
-# 或直接下载源码包解压到网站目录
+系统主要数据表如下：
+
+| 表名                 | 描述             |
+| :------------------- | :--------------- |
+| `users`              | 用户信息         |
+| `bottles`            | 漂流瓶内容       |
+| `comments`           | 评论数据         |
+| `likes`              | 点赞记录         |
+| `pick_records`       | 捡瓶记录         |
+| `checkins`           | 签到记录         |
+| `points_history`     | 积分历史         |
+| `announcements`      | 系统公告         |
+| `admin_roles`        | 管理员角色       |
+| `admins`             | 管理员账号       |
+| `admin_login_logs`   | 管理员登录日志   |
+| `admin_operation_logs` | 管理员操作日志   |
+| `daily_limits`       | 用户每日限制     |
+| `messages`           | 消息中心         |
+| `system_settings`    | 系统配置         |
+
+## 📦 安装与部署
+
+### ✅ 环境要求
+
+- **PHP**: 7.3 或更高版本 (推荐 7.4 / 8.0)
+- **MySQL**: 5.6 或更高版本 / MariaDB 10.3+
+- **Web 服务器**: Apache 2.4+ / Nginx 1.18+
+- **PHP 扩展**: `mysqli`, `mbstring`, `json`
+
+### 📜 部署步骤
+
+1.  **获取代码**
+    ```bash
+    # 克隆仓库
+    git clone https://github.com/kggzs/Driftbottle.git /path/to/web/driftbottle
+    # 或者下载 ZIP 包解压
+    ```
+
+2.  **配置 Web 服务器**
+    - 将网站根目录指向 `/path/to/web/driftbottle`。
+    - (可选) 配置 URL 重写规则（如果需要伪静态，但当前版本已不推荐）。
+
+3.  **数据库设置**
+    1.  创建数据库和用户：
+        ```sql
+        CREATE DATABASE driftbottle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE USER 'driftbottle_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+        GRANT ALL PRIVILEGES ON driftbottle.* TO 'driftbottle_user'@'localhost';
+        FLUSH PRIVILEGES;
+        ```
+    2.  导入数据库结构：
+        ```bash
+        mysql -u driftbottle_user -p driftbottle < driftbottle.sql
+        ```
+    3.  配置数据库连接：
+        - 编辑 `includes/config.php` 文件，修改以下常量：
+          ```php
+          define('DB_HOST', 'localhost');
+          define('DB_USER', 'driftbottle_user');
+          define('DB_PASS', 'your_secure_password');
+          define('DB_NAME', 'driftbottle');
+          ```
+
+4.  **设置目录权限**
+    - 确保 Web 服务器用户对以下目录有写入权限：
+      ```bash
+      # 根据您的服务器环境调整命令
+      chmod -R 755 /path/to/web/driftbottle
+      chmod -R 777 /path/to/web/driftbottle/assets/images/uploads # 如果有上传功能
+      chmod -R 777 /path/to/web/driftbottle/logs
+      ```
+
+5.  **IP 地址库配置 (可选)**
+    - 如需显示 IP 归属地，下载纯真 IP 数据库 `qqwry.dat`。
+    - 将 `qqwry.dat` 文件放入 `ip/` 或 `includes/ip/` 目录（请根据 `ip_location.php` 中的实际路径确认）。
+
+6.  **访问测试**
+    - 打开浏览器访问您的网站地址。
+    - **默认管理员账号**: `admin` / `admin`
+    - **重要**: 首次登录后请务必修改管理员密码！
+    - **安全提示**: `admin/test_admin.php` 和 `admin/reset_password.php` 是密码重置工具，**生产环境请务必删除**！
+
+### ⬆️ 数据库更新
+
+- 项目包含一些用于更新早期数据库结构的 SQL 脚本（位于 `sql/` 目录或根目录）。
+- 如果您是从旧版本升级，请按需执行这些脚本：
+  ```bash
+  mysql -u driftbottle_user -p driftbottle < sql/update_script_name.sql
+  ```
+- 主要更新脚本包括：
+    - `update_user_status.sql`: 添加用户封禁状态。
+    - `update_admin_roles.sql`: 更新管理员角色权限。
+    - `system_settings.sql`: 初始化或更新系统设置。
+    - `vip_points_settings.sql`: VIP 和积分相关配置。
+    - `update_announcements.sql`: 公告系统相关更新。
+
+## ❓ 常见问题 (FAQ)
+
+1.  **页面显示空白或 500 错误？**
+    - 检查 PHP 错误日志 (`logs/php_errors.log` 或服务器配置的日志路径)。
+    - 确认 PHP 版本和所需扩展已安装并启用。
+    - 检查文件和目录权限。
+
+2.  **无法连接数据库？**
+    - 仔细核对 `includes/config.php` 中的数据库连接信息。
+    - 确保 MySQL 服务正在运行。
+    - 检查数据库用户权限是否正确授予。
+
+3.  **图片上传失败？**
+    - 检查 `assets/images/uploads` (或实际上传目录) 是否存在且具有写入权限。
+    - 检查 PHP 配置中的 `upload_max_filesize` 和 `post_max_size` 限制。
+
+4.  **IP 地址归属地显示不正确？**
+    - 确认 `qqwry.dat` 文件存在于正确路径且文件完整。
+    - 纯真 IP 库需要定期更新。
+
+5.  **API 调用失败或无响应？**
+    - 确认 API 请求格式为 `api.php?action=your_action`。
+    - 打开浏览器开发者工具 (F12)，检查“网络 (Network)”和“控制台 (Console)”选项卡是否有错误信息。
+    - 检查服务器端的 PHP 或 Web 服务器错误日志。
+    - 尝试清除浏览器缓存。
+
+## 🔌 API 接口
+
+系统 API 通过 `api.php` 文件提供服务，使用 `action` GET 参数指定调用的端点。
+
+**调用格式:**
+```
+GET /api.php?action=endpoint_name&param1=value1&...
+POST /api.php?action=endpoint_name (with POST data)
 ```
 
-#### 2. 选择Web服务器
+**主要端点示例:**
 
- - Apache或Nginx 二选一即可
+- `check_auth`: 检查登录状态
+- `login`: 用户登录
+- `register`: 用户注册
+- `logout`: 用户登出
+- `create_bottle`: 创建漂流瓶
+- `pick_bottle`: 捡起漂流瓶
+- `comment_bottle`: 评论漂流瓶
+- `like_bottle`: 点赞漂流瓶
+- `user_bottles`: 获取用户扔出的瓶子
+- `user_picked_bottles`: 获取用户捡到的瓶子
+- `get_announcements`: 获取系统公告
+- `get_basic_settings`: 获取系统基本配置
+- ... (更多接口请参考 `api.php` 源码)
 
-#### 3. 数据库配置
-
-1. 创建MySQL数据库
-```sql
-CREATE DATABASE driftbottle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'driftbottle_user'@'localhost' IDENTIFIED BY 'your_secure_password';
-GRANT ALL PRIVILEGES ON driftbottle.* TO 'driftbottle_user'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-2. 导入数据库结构
-```bash
-mysql -u driftbottle_user -p driftbottle < driftbottle.sql
-```
-
-3. 配置数据库连接
-   - 修改 `includes/config.php` 文件中的数据库连接信息
-```php
-define('DB_HOST', 'localhost');
-define('DB_USER', 'driftbottle_user');
-define('DB_PASS', 'your_secure_password');
-define('DB_NAME', 'driftbottle');
-```
-
-#### 4. 目录权限设置
-
-确保以下目录可写：
-```bash
-chmod -R 755 /path/to/web/driftbottle
-chmod -R 777 /path/to/web/driftbottle/assets/images
-chmod -R 777 /path/to/web/driftbottle/logs
-```
-
-#### 5. IP地址库配置（可选）
-
-如果需要显示IP地址所在地区：
-1. 下载纯真IP数据库 `qqwry.dat` 文件
-2. 将其放入 `ip/` 目录中
-
-#### 6. 访问测试
-
-1. 打开浏览器，访问您配置的网站地址
-2. 默认管理员账号：
-   - 用户名：admin
-   - 密码：admin #如果提示密码错误，请执行admin/test_admin.php
-3. 首次登录后请立即修改默认密码
-4. 注意admin/test_admin.php admin/reset_password.php 都属于管理员密码重置工具，上线运营后及时删除
-
-### 数据库更新-早期数据库
-
-当需要更新数据库结构或系统设置时，可使用以下SQL脚本：
-
-- `update_user_status.sql` - 添加用户封禁功能
-- `update_admin_roles.sql` - 更新管理员角色权限
-- `system_settings.sql` - 系统设置项配置
-- `vip_points_settings.sql` - VIP会员积分配置
-- `update_announcements.sql` - 公告系统更新
-
-执行更新脚本示例：
-```bash
-mysql -u driftbottle_user -p driftbottle < update_script.sql
-```
-
-## 🔧 常见问题排查
-
-1. **页面显示空白**
-   - 检查PHP错误日志 (`logs/php_errors.log`)
-   - 确认PHP版本兼容
-   - 检查文件权限
-
-2. **数据库连接错误**
-   - 验证数据库连接信息是否正确
-   - 确保MySQL服务正在运行
-   - 检查用户权限设置
-
-3. **上传图片失败**
-   - 检查 `assets/images/` 目录权限
-   - 检查PHP上传配置 (`upload_max_filesize` 和 `post_max_size`)
-
-4. **IP位置显示异常**
-   - 检查 `ip/qqwry.dat` 文件是否存在且完整
-   - 可能需要更新IP数据库
-
-5. **安全警告问题**
-   - 检查 `security.php` 中的安全策略配置
-   - 更新内容安全策略(CSP)设置
-   - 检查 `validator.php` 中的输入验证规则
-
-6. **API调用问题**
-   - 确保所有前端API调用使用 `api.php?action=endpoint` 格式
-   - 检查浏览器控制台是否有JavaScript错误
-   - 检查服务器日志中是否有API相关错误
-   - 清除浏览器缓存，确保加载最新的JavaScript文件
-
-## 📝 API接口说明
-
-### API调用格式
-
-系统API使用传统的GET参数格式进行调用，如：
-```
-api.php?action=endpoint
-```
-
-注意：系统最初设计使用伪静态格式 (`api.php/endpoint`)，现已更改为更稳定的传统格式。
-
-### 主要API端点
-
-- `check_auth` - 检查用户登录状态
-- `login` - 用户登录
-- `register` - 用户注册
-- `logout` - 用户退出
-- `create_bottle` - 创建漂流瓶
-- `pick_bottle` - 捡起漂流瓶
-- `comment_bottle` - 评论漂流瓶
-- `like_bottle` - 点赞漂流瓶
-- `user_bottles` - 获取用户发出的漂流瓶
-- `user_picked_bottles` - 获取用户捡到的漂流瓶
-- `get_announcements` - 获取系统公告
-- `get_basic_settings` - 获取基本设置
-
-## 📚 项目结构
+## 📁 项目结构
 
 ```
 driftbottle/
-├── admin/                  # 管理员后台
-│   ├── includes/           # 管理员后台功能类
-│   ├── index.php           # 管理后台主页
-│   ├── bottles.php         # 漂流瓶管理
-│   ├── users.php           # 用户管理
-│   ├── comments.php        # 评论管理
-│   ├── announcements.php   # 公告管理
-│   ├── settings.php        # 系统设置
-│   ├── statistics.php      # 统计数据
-│   └── ...                 # 其他管理功能
-├── assets/                 # 静态资源文件
-│   ├── css/                # 样式文件
-│   ├── js/                 # JavaScript文件
-│   │   ├── app.js          # 主要应用逻辑
-│   │   └── utils.js        # 工具函数和日志记录
-│   ├── images/             # 图片文件
-│   └── fonts/              # 字体文件
-├── includes/               # PHP功能类
-│   ├── config.php          # 配置文件
+├── admin/                  # 管理员后台模块
+│   ├── includes/           # 后台公共文件 (header, footer)
+│   ├── *.php               # 各管理页面 (用户、瓶子、评论等)
+│   └── ...
+├── assets/                 # 静态资源 (CSS, JS, Images, Fonts)
+│   ├── css/
+│   ├── js/
+│   │   ├── app.js          # 主要前端逻辑
+│   │   └── utils.js        # 工具函数
+│   ├── images/
+│   └── fonts/
+├── includes/               # 后端核心类库和配置文件
+│   ├── config.php          # 数据库和系统配置
 │   ├── user.php            # 用户类
 │   ├── bottle.php          # 漂流瓶类
-│   ├── security.php        # 安全类
-│   ├── validator.php       # 验证器类
-│   ├── ip_location.php     # IP定位类
-│   └── admin.php           # 管理员类
-├── ip/                     # IP地址库
-├── logs/                   # 日志目录
-├── api.php                 # API接口
-├── index.html              # 首页
+│   ├── security.php        # 安全处理类
+│   ├── validator.php       # 数据验证类
+│   ├── ip_location.php     # IP 定位类
+│   ├── admin.php           # 管理员类
+│   └── ip/                 # IP 数据库存放目录
+├── ip/                     # (可能冗余) IP 数据库目录
+├── logs/                   # 日志文件目录
+├── sql/                    # SQL 脚本目录
+├── api.php                 # API 入口文件
+├── index.html              # 前台首页
 ├── login.html              # 登录页
 ├── register.html           # 注册页
 ├── profile.html            # 个人资料页
-├── throw.html              # 扔漂流瓶页面
-├── pick.html               # 捡漂流瓶页面
-├── driftbottle.sql         # 数据库完整结构
-├── system_settings.sql     # 系统设置SQL
-├── update_*.sql            # 数据库更新脚本
-├── .htaccess               # Apache配置（已停用伪静态）
-├── nginx.htaccess          # Nginx配置（已停用伪静态）
-├── CHANGELOG.md            # 更新日志
-└── README.md               # 说明文档
+├── throw.html              # 扔瓶子页
+├── pick.html               # 捡瓶子页
+├── driftbottle.sql         # 完整数据库结构
+├── .htaccess               # Apache 配置文件 (伪静态已停用)
+├── nginx.htaccess          # Nginx 配置文件 (伪静态已停用)
+├── CHANGELOG.md            # 版本更新日志
+├── LICENSE                 # 开源许可证
+└── README.md               # 本文档
 ```
 
-## 📅 更新历史
+## ⏳ 更新历史
 
-- **v1.0.2** (2025-04-21)：取消使用伪静态功能，优化前端错误处理
-- **v1.0.1** (2025-04-20)：增强安全功能，添加VIP会员系统和签到系统
-- **v1.0.0** (初始版本)：基础漂流瓶功能实现
+- **v1.0.2** (2025-04-21): 弃用伪静态 URL 格式，改为 `?action=` 参数；优化前端错误处理。
+- **v1.0.1** (2025-04-20): 增强安全措施；增加 VIP 会员和签到系统。
+- **v1.0.0** (初始版本): 实现基础的漂流瓶扔/捡、评论、点赞功能。
 
-有关更详细的更新信息，请查看 [CHANGELOG.md](CHANGELOG.md) 文件。
+详细更新内容请查阅 <mcfile name="CHANGELOG.md" path="e:\phpstudy_pro\Driftbottle\Driftbottle\CHANGELOG.md"></mcfile> 文件。
 
-## 🔮 未来规划 - 有时间再继续更新
+## 💡 未来规划 (待定)
 
-- 漂流瓶内容分类系统
-- 用户间私信功能
-- 漂流瓶收藏功能
-- 更多的用户个性化设置
-- 用户等级系统
-- 移动端应用开发
+- [ ] 漂流瓶内容分类/标签系统
+- [ ] 用户间私信功能
+- [ ] 漂流瓶收藏夹
+- [ ] 更丰富的用户个性化设置
+- [ ] 用户等级与成就系统
+- [ ] 移动端适配或 App 开发
 
-## 📄 开源协议
+## 📜 开源协议
 
-本项目使用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
-
-## 🔒 用户指南
-
-### 普通用户功能
-1. **注册与登录**
-   - 通过 `register.html` 注册新账号
-   - 使用 `login.html` 登录系统
-
-2. **个人资料管理**
-   - 在 `profile.html` 编辑个人资料
-   - 修改个性签名
-   - 查看积分历史
-
-3. **漂流瓶操作**
-   - 在 `throw.html` 扔出漂流瓶
-   - 在 `pick.html` 捡起他人漂流瓶
-   - 对漂流瓶评论和点赞
-   - 查看自己的漂流瓶历史
-
-4. **VIP功能**
-   - 使用积分购买VIP会员
-   - 享受扩展的每日扔瓶和捡瓶配额
-   - 获得评论特殊标识
-   - IP地址完全保护
-
-5. **积分获取**
-   - 每日签到
-   - 连续签到额外奖励
-   - 漂流瓶被点赞获得积分
-   - 特殊活动奖励
-
-### 管理员功能
-1. **用户管理**
-   - 查看用户列表
-   - 封禁/解封用户
-   - 重置用户密码
-   - 查看用户详细信息
-
-2. **内容管理**
-   - 管理漂流瓶内容
-   - 审核和删除不当评论
-   - 发布系统公告
-
-3. **系统设置**
-   - 配置系统参数
-   - 设置积分规则
-   - 配置VIP特权
-   - 调整安全策略
-
-4. **数据统计**
-   - 查看用户活跃度
-   - 查看漂流瓶数据统计
-   - 系统运行状态监控
-
-## 📝 功能更新日志
-
-查看 [CHANGELOG.md](CHANGELOG.md) 获取最新功能和改进信息。
+本项目基于 **MIT 许可证** 开源。详情请见 <mcfile name="LICENSE" path="e:\phpstudy_pro\Driftbottle\Driftbottle\LICENSE"></mcfile> 文件。
 
 ## 🔒 安全建议
 
-1. 定期更新数据库密码和管理员密码
-2. 为PHP配置OPcache提高性能和安全性
-3. 使用HTTPS加密传输数据
-4. 定期备份数据库和关键文件
-5. 检查并更新内容安全策略(CSP)
-6. 定期审查安全日志
+1.  **定期备份**: 定期备份数据库和重要文件。
+2.  **强密码**: 使用复杂且唯一的数据库密码和管理员密码，并定期更换。
+3.  **HTTPS**: 部署 SSL 证书，启用 HTTPS 加密传输。
+4.  **删除安装/调试文件**: 生产环境中务必删除 `admin/test_admin.php`, `admin/reset_password.php` 等调试或密码重置工具。
+5.  **更新依赖**: 保持 PHP、MySQL、Web 服务器等软件为最新稳定版本。
+6.  **安全审计**: 定期审查代码和服务器配置，关注安全漏洞。
+7.  **日志监控**: 定期检查 `logs/` 目录下的日志文件，监控异常活动。
+8.  **CSP 策略**: 根据需要调整 `includes/security.php` 中的内容安全策略 (CSP)。
 
 ## 📫 联系与支持
 
-如有问题或建议，请联系QQ：1724464998
+- **QQ**: 1724464998
+- **GitHub Issues**: <https://github.com/kggzs/Driftbottle/issues>
 
-## Star History
+## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=kggzs/Driftbottle&type=Date)](https://www.star-history.com/#kggzs/Driftbottle&Date) 
+[![Star History Chart](https://api.star-history.com/svg?repos=kggzs/Driftbottle&type=Date)](https://www.star-history.com/#kggzs/Driftbottle&Date)
 
-## 📸 系统演示截图
+## 📸 系统截图
 
-以下是漂流瓶系统的主要功能界面截图：
+以下为系统部分界面截图：
 
-### 首页
+**首页**
+![系统首页](assets/images/首页.png)
+*主要功能入口和公告展示*
 
-![首页](assets/images/首页.png)
+**扔漂流瓶**
+![扔漂流瓶页面](assets/images/丢漂流瓶.png)
+*编辑内容、选择心情、设置匿名和位置共享*
 
-系统首页展示了漂流瓶系统的主要功能入口，包括扔漂流瓶和捡漂流瓶两个核心功能按钮，以及系统公告区域。
+**捡漂流瓶**
+![捡漂流瓶页面](assets/images/捡漂流瓶.png)
+*查看瓶子内容、点赞、评论互动*
 
-### 扔漂流瓶
-
-![扔漂流瓶](assets/images/丢漂流瓶.png)
-
-用户可以在这个页面写下自己的心情、想法，选择心情状态，还可以设置是否匿名发送以及是否显示地理位置信息。
-
-### 捡漂流瓶
-
-![捡漂流瓶](assets/images/捡漂流瓶.png)
-
-捡漂流瓶页面允许用户随机获取其他用户扔出的漂流瓶，可以查看内容、点赞以及评论回复。
-
-### 个人中心
-
-![个人中心](assets/images/个人中心.png)
-
-个人中心页面包含用户资料管理、VIP会员特权、签到系统、消息通知等功能。 
+**个人中心**
+![个人中心页面](assets/images/个人中心.png)
+*管理个人资料、VIP、签到、消息等*
