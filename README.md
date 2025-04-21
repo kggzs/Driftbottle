@@ -73,55 +73,14 @@
 #### 1. 获取代码
 
 ```bash
-# 克隆仓库（如果使用Git）
-git clone [仓库地址] /path/to/web/driftbottle
+# 克隆仓库
+git clone https://github.com/kggzs/Driftbottle /path/to/web/driftbottle
 # 或直接下载源码包解压到网站目录
 ```
 
-#### 2. 配置Web服务器
+#### 2. 选择Web服务器
 
-**Apache 配置**:
-```apache
-<VirtualHost *:80>
-    ServerName yoursite.com
-    DocumentRoot /path/to/web/driftbottle
-    
-    <Directory /path/to/web/driftbottle>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-    
-    ErrorLog ${APACHE_LOG_DIR}/driftbottle_error.log
-    CustomLog ${APACHE_LOG_DIR}/driftbottle_access.log combined
-</VirtualHost>
-```
-
-**Nginx 配置**:
-```nginx
-server {
-    listen 80;
-    server_name yoursite.com;
-    root /path/to/web/driftbottle;
-    index index.html index.php;
-    
-    # 注意：系统已不再使用伪静态功能，使用传统API调用方式
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-    
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock; # 根据您的PHP版本调整
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-    
-    location ~ /\.ht {
-        deny all;
-    }
-}
-```
+ - Apache或Nginx 二选一即可
 
 #### 3. 数据库配置
 
@@ -167,11 +126,11 @@ chmod -R 777 /path/to/web/driftbottle/logs
 1. 打开浏览器，访问您配置的网站地址
 2. 默认管理员账号：
    - 用户名：admin
-   - 密码：admin
+   - 密码：admin #如果提示密码错误，请执行admin/test_admin.php
 3. 首次登录后请立即修改默认密码
 4. 注意admin/test_admin.php admin/reset_password.php 都属于管理员密码重置工具，上线运营后及时删除
 
-### 数据库更新
+### 数据库更新-早期数据库
 
 当需要更新数据库结构或系统设置时，可使用以下SQL脚本：
 
@@ -298,7 +257,7 @@ driftbottle/
 
 有关更详细的更新信息，请查看 [CHANGELOG.md](CHANGELOG.md) 文件。
 
-## 🔮 未来规划
+## 🔮 未来规划 - 有时间再继续更新
 
 - 漂流瓶内容分类系统
 - 用户间私信功能
