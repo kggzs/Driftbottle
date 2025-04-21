@@ -24,7 +24,7 @@ if (DEBUG_MODE) {
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', 'root');
-define('DB_NAME', 'driftbottle');
+define('DB_NAME', 'driftbottle1');
 
 // 安全配置
 define('SESSION_LIFETIME', 86400); // 会话有效期（秒）

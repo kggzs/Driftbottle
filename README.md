@@ -169,6 +169,7 @@ chmod -R 777 /path/to/web/driftbottle/logs
    - 用户名：admin
    - 密码：admin
 3. 首次登录后请立即修改默认密码
+4. 注意admin/test_admin.php admin/reset_password.php 都属于管理员密码重置工具，上线运营后及时删除
 
 ### 数据库更新
 
