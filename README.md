@@ -343,3 +343,31 @@ driftbottle/
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=kggzs/Driftbottle&type=Date)](https://www.star-history.com/#kggzs/Driftbottle&Date) 
+
+## 📸 系统演示截图
+
+以下是漂流瓶系统的主要功能界面截图：
+
+### 首页
+
+![首页](assets/images/首页.png)
+
+系统首页展示了漂流瓶系统的主要功能入口，包括扔漂流瓶和捡漂流瓶两个核心功能按钮，以及系统公告区域。
+
+### 扔漂流瓶
+
+![扔漂流瓶](assets/images/丢漂流瓶.png)
+
+用户可以在这个页面写下自己的心情、想法，选择心情状态，还可以设置是否匿名发送以及是否显示地理位置信息。
+
+### 捡漂流瓶
+
+![捡漂流瓶](assets/images/捡漂流瓶.png)
+
+捡漂流瓶页面允许用户随机获取其他用户扔出的漂流瓶，可以查看内容、点赞以及评论回复。
+
+### 个人中心
+
+![个人中心](assets/images/个人中心.png)
+
+个人中心页面包含用户资料管理、VIP会员特权、签到系统、消息通知等功能。 
