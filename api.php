@@ -20,7 +20,20 @@ $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 // 获取endpoint
-$endpoint = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+$endpoint = basename($requestUri);
+
+// 检查是否是 api.php/endpoint 格式的请求
+if (strpos($requestUri, 'api.php/') !== false) {
+    // 提取 api.php/ 后面的部分作为 endpoint
+    $pathParts = explode('api.php/', $requestUri);
+    if (count($pathParts) > 1) {
+        $endpoint = trim($pathParts[1], '/');
+        // 如果有多个斜杠，只取第一个部分作为 endpoint
+        if (strpos($endpoint, '/') !== false) {
+            $endpoint = explode('/', $endpoint)[0];
+        }
+    }
+}
 
 // 如果是通过 action 参数传递的请求，使用 action 参数作为 endpoint
 if (isset($_GET['action'])) {
@@ -429,18 +442,19 @@ switch ($endpoint) {
             $response = ['success' => false, 'message' => '请先登录'];
         } else {
             $limits = getUserDailyLimits(getCurrentUserId());
-            $isVip = $limits['is_vip'];
-            $pickLimit = $isVip ? VIP_DAILY_PICK_LIMIT : DAILY_PICK_LIMIT; // 使用配置常量
-            
-            $response = [
-                'success' => true, 
-                'limits' => $limits,
-                'throw_remaining' => DAILY_BOTTLE_LIMIT - $limits['throw_count'],
-                'pick_remaining' => $pickLimit - $limits['pick_count'],
-                'free_throws_remaining' => $limits['free_throws_remaining'],
-                'is_vip' => $limits['is_vip'],
-                'vip_free_throws_remaining' => $limits['vip_free_throws_remaining']
-            ];
+        $isVip = $limits['is_vip'];
+        $pickLimit = $isVip ? VIP_DAILY_PICK_LIMIT : DAILY_PICK_LIMIT; // 使用配置常量
+        $throwLimit = $isVip ? VIP_DAILY_BOTTLE_LIMIT : DAILY_BOTTLE_LIMIT;
+        
+        $response = [
+            'success' => true, 
+            'limits' => $limits,
+            'throw_remaining' => $throwLimit - $limits['throw_count'],
+            'pick_remaining' => $pickLimit - $limits['pick_count'],
+            'free_throws_remaining' => $limits['standard_free_throws_remaining'],
+            'is_vip' => $limits['is_vip'],
+            'vip_free_throws_remaining' => $limits['vip_free_throws_remaining']
+        ];
         }
         break;
         

@@ -103,22 +103,22 @@
                 }
                 
                 // 获取系统配置常量
-                fetch('api.php/get_system_config')
-                .then(response => response.json())
-                .then(config => {
-                    if (config.success) {
-                        // 更新配置常量
-                        window.DAILY_PICK_LIMIT = config.DAILY_PICK_LIMIT || window.DAILY_PICK_LIMIT;
-                        window.VIP_DAILY_PICK_LIMIT = config.VIP_DAILY_PICK_LIMIT || window.VIP_DAILY_PICK_LIMIT;
-                        window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
-                        
-                        // 更新VIP额外次数显示
-                        const vipExtraCount = document.getElementById('vipExtraCount');
-                        if (vipExtraCount) {
-                            vipExtraCount.textContent = window.VIP_PICK_EXTRA;
-                        }
+            fetch('api.php?action=get_system_config')
+            .then(response => response.json())
+            .then(config => {
+                if (config.success) {
+                    // 更新配置常量
+                    window.DAILY_PICK_LIMIT = config.DAILY_PICK_LIMIT || window.DAILY_PICK_LIMIT;
+                    window.VIP_DAILY_PICK_LIMIT = config.VIP_DAILY_PICK_LIMIT || window.VIP_DAILY_PICK_LIMIT;
+                    window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
+                    
+                    // 更新VIP额外次数显示
+                    const vipExtraCount = document.getElementById('vipExtraCount');
+                    if (vipExtraCount) {
+                        vipExtraCount.textContent = window.VIP_PICK_EXTRA;
                     }
-                })
+                }
+            })
                 .catch(error => Logger.error('获取系统配置失败:', error))
                 .finally(() => {
                     // 检查用户VIP状态
@@ -138,7 +138,7 @@
         
         // 获取用户每日限制
         function getDailyLimits() {
-            fetch('api.php/get_daily_limits')
+            fetch('api.php?action=get_daily_limits')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -175,7 +175,7 @@
         
         // 获取已捡起的漂流瓶数量
         function getPickedBottlesCount() {
-            fetch('api.php/user_picked_bottles')
+            fetch('api.php?action=user_picked_bottles')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -325,7 +325,7 @@
         
         // 点赞漂流瓶
         function likeBottle(bottleId, btnElement) {
-            fetch('api.php/like_bottle', {
+            fetch('api.php?action=like_bottle', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bottle_id: bottleId })
@@ -354,7 +354,7 @@
         
         // 评论并扔回大海
         function commentAndThrowBottle(bottleId, content) {
-            fetch('api.php/comment_bottle', {
+            fetch('api.php?action=comment_bottle', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bottle_id: bottleId, content: content })
@@ -406,7 +406,7 @@
         
         // 检查VIP状态
         function checkVipStatus() {
-            fetch('api.php/check_vip_status')
+            fetch('api.php?action=check_vip_status')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {

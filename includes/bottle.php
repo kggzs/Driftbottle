@@ -52,33 +52,39 @@ function getUserDailyLimits($userId) {
     $vipFreeLimit = VIP_DAILY_BOTTLE_LIMIT; // VIP用户每日免费扔瓶次数
     $vipExtraLimit = $vipFreeLimit - $standardFreeLimit; // VIP用户额外次数
     
-    // 计算剩余的普通免费次数
-    $limits['free_throws_remaining'] = max(0, $standardFreeLimit - $limits['free_throws_used']);
+    // 计算剩余的免费次数
+// 对于VIP用户，免费次数包括标准免费次数和VIP额外次数
+$totalFreeLimit = $isVip ? $vipFreeLimit : $standardFreeLimit;
+$limits['free_throws_remaining'] = max(0, $totalFreeLimit - $limits['free_throws_used']);
     
-    // 计算VIP专属额外次数
-    if ($isVip) {
-        // 总免费次数 = VIP用户每日免费次数
-        $limits['vip_free_throws'] = $vipFreeLimit;
-        
-        // 计算VIP专属剩余次数
-        if ($limits['free_throws_used'] <= $standardFreeLimit) {
-            // 如果还没用完普通免费次数，VIP专属次数为全部
-            $limits['vip_free_throws_remaining'] = $vipExtraLimit;
-        } else {
-            // 如果已经用完普通免费次数，计算VIP专属剩余次数
-            $vipUsed = $limits['free_throws_used'] - $standardFreeLimit;
-            $limits['vip_free_throws_remaining'] = max(0, $vipExtraLimit - $vipUsed);
-        }
-        
-        // 添加调试信息
-        error_log("VIP用户 {$userId} 的免费次数使用情况：");
-        error_log("已使用次数: {$limits['free_throws_used']}");
-        error_log("普通免费剩余: {$limits['free_throws_remaining']}");
-        error_log("VIP专属剩余: {$limits['vip_free_throws_remaining']}");
-    } else {
-        // 非VIP用户没有VIP专属次数
-        $limits['vip_free_throws_remaining'] = 0;
-    }
+// 计算VIP专属额外次数
+if ($isVip) {
+    // 总免费次数 = VIP用户每日免费次数
+    $limits['vip_free_throws'] = $vipFreeLimit;
+    
+    // 计算VIP专属剩余次数
+    // VIP专属次数是指超出标准免费次数的部分
+    $totalUsed = $limits['free_throws_used'];
+    $standardUsed = min($totalUsed, $standardFreeLimit);
+    $vipUsed = max(0, $totalUsed - $standardFreeLimit);
+    $limits['vip_free_throws_remaining'] = max(0, $vipExtraLimit - $vipUsed);
+    
+    // 普通免费次数剩余（即使是VIP用户，也需要显示标准免费次数的剩余）
+    $limits['standard_free_throws_remaining'] = max(0, $standardFreeLimit - $standardUsed);
+    
+    // 添加调试信息
+    error_log("VIP用户 {$userId} 的免费次数使用情况：");
+    error_log("已使用总次数: {$totalUsed}");
+    error_log("已使用普通次数: {$standardUsed}");
+    error_log("已使用VIP额外次数: {$vipUsed}");
+    error_log("普通免费剩余: {$limits['standard_free_throws_remaining']}");
+    error_log("VIP专属剩余: {$limits['vip_free_throws_remaining']}");
+    error_log("总免费剩余: {$limits['free_throws_remaining']}");
+} else {
+    // 非VIP用户没有VIP专属次数
+    $limits['vip_free_throws_remaining'] = 0;
+    $limits['standard_free_throws_remaining'] = $limits['free_throws_remaining'];
+}
     
     $stmt->close();
     $conn->close();

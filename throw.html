@@ -140,19 +140,19 @@
                 document.getElementById('pointsPerBottle').textContent = window.POINTS_PER_BOTTLE;
                 
                 // 获取系统配置常量
-                fetch('api.php/get_system_config')
-                .then(response => response.json())
-                .then(config => {
-                    if (config.success) {
-                        // 更新配置常量
-                        window.POINTS_PER_BOTTLE = config.POINTS_PER_BOTTLE || window.POINTS_PER_BOTTLE;
-                        window.DAILY_BOTTLE_LIMIT = config.DAILY_BOTTLE_LIMIT || window.DAILY_BOTTLE_LIMIT;
-                        window.VIP_DAILY_BOTTLE_LIMIT = config.VIP_DAILY_BOTTLE_LIMIT || window.VIP_DAILY_BOTTLE_LIMIT;
-                        
-                        // 显示每瓶消耗的积分
-                        document.getElementById('pointsPerBottle').textContent = window.POINTS_PER_BOTTLE;
-                    }
-                })
+            fetch('api.php?action=get_system_config')
+            .then(response => response.json())
+            .then(config => {
+                if (config.success) {
+                    // 更新配置常量
+                    window.POINTS_PER_BOTTLE = config.POINTS_PER_BOTTLE || window.POINTS_PER_BOTTLE;
+                    window.DAILY_BOTTLE_LIMIT = config.DAILY_BOTTLE_LIMIT || window.DAILY_BOTTLE_LIMIT;
+                    window.VIP_DAILY_BOTTLE_LIMIT = config.VIP_DAILY_BOTTLE_LIMIT || window.VIP_DAILY_BOTTLE_LIMIT;
+                    
+                    // 显示每瓶消耗的积分
+                    document.getElementById('pointsPerBottle').textContent = window.POINTS_PER_BOTTLE;
+                }
+            })
                 .catch(error => Logger.error('获取系统配置失败:', error))
                 .finally(() => {
                     // 检查VIP状态
@@ -194,7 +194,7 @@
                             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在扔出...';
                             
                             // 提交扔瓶请求
-                            fetch('api.php/create_bottle', {
+                            fetch('api.php?action=create_bottle', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
@@ -253,7 +253,7 @@
         
         // 获取用户每日限制
         function getDailyLimits() {
-            fetch('api.php/get_daily_limits')
+            fetch('api.php?action=get_daily_limits')
             .then(response => response.json())
             .then(data => {
                 Logger.log("服务器返回的数据:", data); // 添加调试信息
@@ -267,7 +267,7 @@
                     document.getElementById('totalFreeThrows').textContent = window.DAILY_BOTTLE_LIMIT;
                     
                     // 获取最新积分
-                    fetch('api.php/user_info')
+                    fetch('api.php?action=user_info')
                     .then(response => response.json())
                     .then(userData => {
                         if (userData.success && userData.user) {
@@ -359,7 +359,7 @@
         
         // 检查VIP状态
         function checkVipStatus() {
-            fetch('api.php/check_vip_status')
+            fetch('api.php?action=check_vip_status')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -419,7 +419,7 @@
         // 获取地理位置预览
         async function getLocationPreview() {
             try {
-                const response = await fetch('api.php/get_location_preview');
+                const response = await fetch('api.php?action=get_location_preview');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

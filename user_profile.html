@@ -111,7 +111,7 @@
         
         // 加载用户公开资料
         function loadPublicProfile(userId) {
-            fetch(`api.php/public_profile?user_id=${userId}`)
+            fetch(`api.php?action=public_profile&user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('publicProfileContainer');
@@ -156,7 +156,7 @@
         
         // 加载用户的公开漂流瓶
         function loadUserPublicBottles(userId) {
-            fetch(`api.php/public_bottles?user_id=${userId}`)
+            fetch(`api.php?action=public_bottles&user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('userBottlesContainer');
