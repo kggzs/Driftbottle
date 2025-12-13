@@ -48,10 +48,32 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 删除漂流瓶
     if (isset($_POST['confirm_delete']) && $action === 'delete' && $id > 0) {
+        // 先查询漂流瓶信息，获取音频文件路径
+        $selectStmt = $conn->prepare("SELECT audio_file FROM bottles WHERE id = ?");
+        $selectStmt->bind_param("i", $id);
+        $selectStmt->execute();
+        $selectResult = $selectStmt->get_result();
+        
+        $audioFile = null;
+        if ($selectResult->num_rows > 0) {
+            $bottleData = $selectResult->fetch_assoc();
+            $audioFile = $bottleData['audio_file'];
+        }
+        $selectStmt->close();
+        
+        // 删除数据库记录
         $stmt = $conn->prepare("DELETE FROM bottles WHERE id = ?");
         $stmt->bind_param("i", $id);
         
         if ($stmt->execute()) {
+            // 删除语音文件（如果存在）
+            if ($audioFile && !empty($audioFile)) {
+                $audioFilePath = __DIR__ . '/../' . $audioFile;
+                if (file_exists($audioFilePath)) {
+                    @unlink($audioFilePath);
+                }
+            }
+            
             // 同时删除相关评论
             $commentStmt = $conn->prepare("DELETE FROM comments WHERE bottle_id = ?");
             $commentStmt->bind_param("i", $id);
@@ -59,9 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $commentStmt->close();
             
             // 记录管理员操作
-            $admin->logOperation('漂流瓶', '删除', "删除漂流瓶ID: $id");
+            $admin->logOperation('漂流瓶', '删除', "删除漂流瓶ID: $id" . ($audioFile ? "（包含语音文件）" : ""));
             
-            $message = '漂流瓶删除成功！';
+            $message = '漂流瓶删除成功！' . ($audioFile ? '（语音文件已删除）' : '');
             $messageType = 'success';
             
             // 重定向到列表页
@@ -135,7 +157,7 @@ if (isset($_GET['message'])) {
 $deleteBottle = null;
 
 if ($action === 'delete' && $id > 0) {
-    $stmt = $conn->prepare("SELECT b.id, b.content, u.username 
+    $stmt = $conn->prepare("SELECT b.id, b.content, b.bottle_type, b.audio_file, u.username 
                             FROM bottles b 
                             LEFT JOIN users u ON b.user_id = u.id 
                             WHERE b.id = ?");
@@ -332,7 +354,17 @@ $admin->logOperation('漂流瓶', '查看', '查看漂流瓶列表');
             <p class="lead">您确定要删除以下漂流瓶吗？</p>
             <p><strong>ID：</strong> <?php echo $deleteBottle['id']; ?></p>
             <p><strong>发布者：</strong> <?php echo htmlspecialchars($deleteBottle['username'] ?? '未知用户'); ?></p>
+            <p><strong>类型：</strong> 
+                <?php if (isset($deleteBottle['bottle_type']) && $deleteBottle['bottle_type'] === 'voice'): ?>
+                    <span class="badge bg-warning"><i class="fas fa-microphone"></i> 语音漂流瓶</span>
+                <?php else: ?>
+                    <span class="badge bg-info"><i class="fas fa-pen"></i> 文字漂流瓶</span>
+                <?php endif; ?>
+            </p>
             <p><strong>内容：</strong> <?php echo htmlspecialchars(mb_substr($deleteBottle['content'], 0, 100)) . (mb_strlen($deleteBottle['content']) > 100 ? '...' : ''); ?></p>
+            <?php if (isset($deleteBottle['bottle_type']) && $deleteBottle['bottle_type'] === 'voice' && !empty($deleteBottle['audio_file'])): ?>
+            <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> 此漂流瓶包含语音文件，删除时将一并删除！</p>
+            <?php endif; ?>
             <p class="text-danger">此操作不可撤销！相关评论也将被删除！</p>
             
             <form method="post" action="bottles.php?action=delete&id=<?php echo $id; ?>">
@@ -411,6 +443,11 @@ $admin->logOperation('漂流瓶', '查看', '查看漂流瓶列表');
                                 <td><?php echo $bottle['id']; ?></td>
                                 <td>
                                     <?php 
+                                    // 显示漂流瓶类型标识
+                                    if (isset($bottle['bottle_type']) && $bottle['bottle_type'] === 'voice'): ?>
+                                        <span class="badge bg-warning me-1"><i class="fas fa-microphone"></i> 语音</span>
+                                    <?php endif;
+                                    
                                     $content = htmlspecialchars($bottle['content']);
                                     echo mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '...' : $content; 
                                     ?>

@@ -205,6 +205,14 @@
             }
         }
         
+        // 格式化时长显示
+        function formatDuration(seconds) {
+            if (!seconds) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${String(secs).padStart(2, '0')}`;
+        }
+        
         // 显示捡到的漂流瓶
         function displayBottle(bottle) {
             const container = document.querySelector('.bottle-container');
@@ -242,7 +250,21 @@
                     </div>
                     
                     <div class="bottle-content mb-3">
-                        <p>${bottle.content}</p>
+                        ${bottle.bottle_type === 'voice' && bottle.audio_file ? `
+                            <div class="voice-bottle-container">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-microphone"></i> 这是一个语音漂流瓶
+                                </div>
+                                <audio controls class="w-100 mt-2" id="bottleAudio_${bottle.id}">
+                                    <source src="${bottle.audio_file}" type="audio/webm">
+                                    <source src="${bottle.audio_file}" type="audio/mpeg">
+                                    您的浏览器不支持音频播放
+                                </audio>
+                                ${bottle.audio_duration ? `<small class="text-muted d-block mt-1">时长: ${formatDuration(bottle.audio_duration)}</small>` : ''}
+                            </div>
+                        ` : `
+                            <p>${bottle.content}</p>
+                        `}
                         ${bottle.signature ? `<p class="text-muted small fst-italic mt-2">——${bottle.signature}</p>` : ''}
                     </div>
                     

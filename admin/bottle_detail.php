@@ -44,7 +44,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_comment' && isset($_GE
 
 // 查询漂流瓶详情
 $stmt = $conn->prepare("SELECT b.id, b.user_id, b.content, b.mood, b.throw_time, 
-                        b.status, b.ip_address, b.location, b.is_anonymous, b.likes, u.username
+                        b.status, b.ip_address, b.location, b.is_anonymous, b.likes, 
+                        b.bottle_type, b.audio_file, b.audio_duration, u.username
                         FROM bottles b 
                         LEFT JOIN users u ON b.user_id = u.id 
                         WHERE b.id = ?");
@@ -147,7 +148,33 @@ $pageActions .= '<a href="bottles.php?action=delete&id=' . $id . '" class="btn b
                     
                     <div class="card p-3 bg-light mb-4">
                         <div class="card-body">
-                            <p class="pre-wrap"><?php echo nl2br(htmlspecialchars($bottle['content'])); ?></p>
+                            <?php if (isset($bottle['bottle_type']) && $bottle['bottle_type'] === 'voice' && !empty($bottle['audio_file'])): ?>
+                                <!-- 语音漂流瓶 -->
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas fa-microphone"></i> 这是一个语音漂流瓶
+                                </div>
+                                <audio controls class="w-100 mb-3">
+                                    <source src="../<?php echo htmlspecialchars($bottle['audio_file']); ?>" type="audio/webm">
+                                    <source src="../<?php echo htmlspecialchars($bottle['audio_file']); ?>" type="audio/mpeg">
+                                    您的浏览器不支持音频播放
+                                </audio>
+                                <?php if (isset($bottle['audio_duration']) && $bottle['audio_duration'] > 0): ?>
+                                    <small class="text-muted">时长: <?php 
+                                        $minutes = floor($bottle['audio_duration'] / 60);
+                                        $seconds = $bottle['audio_duration'] % 60;
+                                        echo sprintf('%d:%02d', $minutes, $seconds);
+                                    ?></small>
+                                <?php endif; ?>
+                                <?php if (!empty($bottle['content']) && $bottle['content'] !== '[语音漂流瓶]'): ?>
+                                    <div class="mt-3">
+                                        <p class="text-muted small mb-1">文字说明：</p>
+                                        <p class="pre-wrap"><?php echo nl2br(htmlspecialchars($bottle['content'])); ?></p>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <!-- 文字漂流瓶 -->
+                                <p class="pre-wrap"><?php echo nl2br(htmlspecialchars($bottle['content'])); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
                     
@@ -214,6 +241,34 @@ $pageActions .= '<a href="bottles.php?action=delete&id=' . $id . '" class="btn b
                                         <?php echo htmlspecialchars($bottle['mood']); ?>
                                     </span>
                                 </li>
+                                <?php endif; ?>
+                                <?php if (isset($bottle['bottle_type'])): ?>
+                                <li class="list-group-item">
+                                    <strong>类型：</strong> 
+                                    <?php if ($bottle['bottle_type'] === 'voice'): ?>
+                                        <span class="badge bg-warning"><i class="fas fa-microphone"></i> 语音漂流瓶</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-info"><i class="fas fa-pen"></i> 文字漂流瓶</span>
+                                    <?php endif; ?>
+                                </li>
+                                <?php endif; ?>
+                                <?php if (isset($bottle['bottle_type']) && $bottle['bottle_type'] === 'voice' && !empty($bottle['audio_file'])): ?>
+                                <li class="list-group-item">
+                                    <strong>语音文件：</strong> 
+                                    <a href="../<?php echo htmlspecialchars($bottle['audio_file']); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download"></i> 下载
+                                    </a>
+                                </li>
+                                <?php if (isset($bottle['audio_duration']) && $bottle['audio_duration'] > 0): ?>
+                                <li class="list-group-item">
+                                    <strong>语音时长：</strong> 
+                                    <?php 
+                                        $minutes = floor($bottle['audio_duration'] / 60);
+                                        $seconds = $bottle['audio_duration'] % 60;
+                                        echo sprintf('%d:%02d', $minutes, $seconds);
+                                    ?>
+                                </li>
+                                <?php endif; ?>
                                 <?php endif; ?>
                                 <?php if (isset($bottle['category']) && $bottle['category']): ?>
                                 <li class="list-group-item">

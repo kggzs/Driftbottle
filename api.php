@@ -183,25 +183,98 @@ switch ($endpoint) {
         }
         break;
         
+    case 'upload_audio':
+        if (!isLoggedIn()) {
+            $response = ['success' => false, 'message' => '请先登录'];
+        } else if ($requestMethod === 'POST') {
+            // 处理音频文件上传
+            if (!isset($_FILES['audio']) || $_FILES['audio']['error'] !== UPLOAD_ERR_OK) {
+                $response = ['success' => false, 'message' => '音频文件上传失败'];
+            } else {
+                // 检查文件类型
+                $allowedTypes = ['audio/webm', 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'];
+                $fileType = $_FILES['audio']['type'];
+                if (!in_array($fileType, $allowedTypes)) {
+                    $response = ['success' => false, 'message' => '不支持的音频格式，请使用webm、mp3、wav或ogg格式'];
+                } else {
+                    // 检查文件大小（限制为5MB）
+                    $maxSize = 5 * 1024 * 1024; // 5MB
+                    if ($_FILES['audio']['size'] > $maxSize) {
+                        $response = ['success' => false, 'message' => '音频文件大小不能超过5MB'];
+                    } else {
+                        // 创建上传目录
+                        $uploadDir = __DIR__ . '/uploads/audio/';
+                        if (!file_exists($uploadDir)) {
+                            mkdir($uploadDir, 0755, true);
+                        }
+                        
+                        // 生成唯一文件名
+                        $fileName = 'voice_' . getCurrentUserId() . '_' . time() . '_' . uniqid() . '.webm';
+                        $filePath = $uploadDir . $fileName;
+                        
+                        // 移动文件
+                        if (move_uploaded_file($_FILES['audio']['tmp_name'], $filePath)) {
+                            // 获取音频时长（简单估算，实际可能需要使用音频处理库）
+                            $audioDuration = 0;
+                            // 这里可以添加音频时长检测逻辑
+                            // 注意：实际项目中可以使用getid3库或其他音频处理库来获取准确的时长
+                            
+                            // 返回相对路径，前端可以直接使用
+                            $response = [
+                                'success' => true,
+                                'audio_file' => 'uploads/audio/' . $fileName,
+                                'audio_duration' => $audioDuration
+                            ];
+                        } else {
+                            $response = ['success' => false, 'message' => '文件保存失败'];
+                        }
+                    }
+                }
+            }
+        } else {
+            $response = ['success' => false, 'message' => '请求方法不支持'];
+        }
+        break;
+        
     case 'create_bottle':
         if (!isLoggedIn()) {
             $response = ['success' => false, 'message' => '请先登录'];
         } else if ($requestMethod === 'POST') {
-            // 定义验证规则
-            $rules = [
-                'content' => [
-                    'required' => true,
-                    'filter' => 'html',
-                    'max_length' => MAX_BOTTLE_LENGTH,
-                    'message' => '漂流瓶内容不能为空且不能超过' . MAX_BOTTLE_LENGTH . '字符'
-                ],
-                'is_anonymous' => [
-                    'filter' => 'int'
-                ],
-                'mood' => [
-                    'filter' => 'string'
-                ]
-            ];
+            $bottleType = isset($data['bottle_type']) ? $data['bottle_type'] : 'text';
+            
+            // 根据漂流瓶类型定义不同的验证规则
+            if ($bottleType === 'voice') {
+                // 语音漂流瓶验证规则
+                $rules = [
+                    'audio_file' => [
+                        'required' => true,
+                        'filter' => 'string',
+                        'message' => '音频文件不能为空'
+                    ],
+                    'is_anonymous' => [
+                        'filter' => 'int'
+                    ],
+                    'mood' => [
+                        'filter' => 'string'
+                    ]
+                ];
+            } else {
+                // 文字漂流瓶验证规则
+                $rules = [
+                    'content' => [
+                        'required' => true,
+                        'filter' => 'html',
+                        'max_length' => MAX_BOTTLE_LENGTH,
+                        'message' => '漂流瓶内容不能为空且不能超过' . MAX_BOTTLE_LENGTH . '字符'
+                    ],
+                    'is_anonymous' => [
+                        'filter' => 'int'
+                    ],
+                    'mood' => [
+                        'filter' => 'string'
+                    ]
+                ];
+            }
             
             // 验证输入
             $validation = Security::validateInput($data, $rules);
@@ -209,11 +282,13 @@ switch ($endpoint) {
             if (!$validation['valid']) {
                 $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
             } else {
-                $content = $validation['data']['content'];
+                $content = isset($validation['data']['content']) ? $validation['data']['content'] : '';
                 $isAnonymous = isset($validation['data']['is_anonymous']) ? (int)$validation['data']['is_anonymous'] : 0;
                 $mood = $validation['data']['mood'] ?? '其他';
+                $audioFile = isset($validation['data']['audio_file']) ? $validation['data']['audio_file'] : null;
+                $audioDuration = isset($data['audio_duration']) ? (int)$data['audio_duration'] : 0;
                 
-                $response = createBottle(getCurrentUserId(), $content, $isAnonymous, $mood);
+                $response = createBottle(getCurrentUserId(), $content, $isAnonymous, $mood, $bottleType, $audioFile, $audioDuration);
             }
         } else {
             $response = ['success' => false, 'message' => '请求方法不支持'];

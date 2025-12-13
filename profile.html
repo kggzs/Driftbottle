@@ -673,6 +673,14 @@
             }
         }
         
+        // 格式化时长显示函数（供多个函数使用）
+        const formatDuration = (seconds) => {
+            if (!seconds) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${String(secs).padStart(2, '0')}`;
+        };
+        
         // 加载用户漂流瓶
         function loadUserBottles() {
             fetch('api.php?action=user_bottles')
@@ -686,12 +694,36 @@
                             const genderClass = window.userInfo && window.userInfo.gender === '男' ? 'bottle-male' : 'bottle-female';
                             const createTime = new Date(bottle.throw_time).toLocaleString();
                             
+                            // 判断是否为语音漂流瓶
+                            const isVoiceBottle = bottle.bottle_type === 'voice' && bottle.audio_file;
+                            
+                            // 生成内容HTML
+                            let contentHtml = '';
+                            if (isVoiceBottle) {
+                                contentHtml = `
+                                    <div class="voice-bottle-container mb-3">
+                                        <div class="alert alert-info mb-2">
+                                            <i class="fas fa-microphone"></i> 这是一个语音漂流瓶
+                                        </div>
+                                        <audio controls class="w-100" id="bottleAudio_${bottle.id}">
+                                            <source src="${bottle.audio_file}" type="audio/webm">
+                                            <source src="${bottle.audio_file}" type="audio/mpeg">
+                                            您的浏览器不支持音频播放
+                                        </audio>
+                                        ${bottle.audio_duration ? `<small class="text-muted d-block mt-1">时长: ${formatDuration(bottle.audio_duration)}</small>` : ''}
+                                    </div>
+                                    ${bottle.content && bottle.content !== '[语音漂流瓶]' ? `<p class="text-muted small">${bottle.content}</p>` : ''}
+                                `;
+                            } else {
+                                contentHtml = `<div class="bottle-content">${bottle.content}</div>`;
+                            }
+                            
                             const bottleHtml = `
                                 <div class="bottle ${genderClass}">
                                     <div class="bottle-header">
                                         <span class="bottle-time">${createTime}</span>
                                     </div>
-                                    <div class="bottle-content">${bottle.content}</div>
+                                    ${contentHtml}
                                     <div class="bottle-actions">
                                         <span class="bottle-btn">
                                             <i class="fas fa-heart"></i> ${bottle.like_count || 0} 点赞
@@ -708,7 +740,7 @@
                     } else {
                         document.querySelector('.bottles-container').innerHTML = `
                             <div class="text-center">
-                                <p>你还没有扔出过漂流瓶，去<a href="create.html">扔一个</a>吧！</p>
+                                <p>你还没有扔出过漂流瓶，去<a href="throw.html">扔一个</a>吧！</p>
                             </div>
                         `;
                     }
@@ -779,14 +811,38 @@
                             const usernameDisplay = !bottle.is_anonymous ? 
                                 `<a href="user_profile.html?id=${bottle.user_id}" class="text-primary">${bottle.username}</a>` : 
                                 `<span class="text-primary">${bottle.username}</span>`;
-                                
+                            
+                            // 判断是否为语音漂流瓶
+                            const isVoiceBottle = bottle.bottle_type === 'voice' && bottle.audio_file;
+                            
+                            // 生成内容HTML
+                            let contentHtml = '';
+                            if (isVoiceBottle) {
+                                contentHtml = `
+                                    <div class="voice-bottle-container mb-3">
+                                        <div class="alert alert-info mb-2">
+                                            <i class="fas fa-microphone"></i> 这是一个语音漂流瓶
+                                        </div>
+                                        <audio controls class="w-100" id="bottleAudio_${bottle.id}">
+                                            <source src="${bottle.audio_file}" type="audio/webm">
+                                            <source src="${bottle.audio_file}" type="audio/mpeg">
+                                            您的浏览器不支持音频播放
+                                        </audio>
+                                        ${bottle.audio_duration ? `<small class="text-muted d-block mt-1">时长: ${formatDuration(bottle.audio_duration)}</small>` : ''}
+                                    </div>
+                                    ${bottle.content && bottle.content !== '[语音漂流瓶]' ? `<p class="text-muted small">${bottle.content}</p>` : ''}
+                                `;
+                            } else {
+                                contentHtml = `<div class="bottle-content">${bottle.content}</div>`;
+                            }
+                            
                             bottleDiv.innerHTML = `
                                 <div class="bottle-header">
                                     <span class="bottle-author">${usernameDisplay}</span>
                                     <span class="bottle-time">捡到时间: ${pickTime}</span>
                                     <span class="d-none">ID:${bottle.id}</span>
                                 </div>
-                                <div class="bottle-content">${bottle.content}</div>
+                                ${contentHtml}
                                 <div class="bottle-actions">
                                     <div>
                                         <span class="bottle-btn">

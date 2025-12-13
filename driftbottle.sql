@@ -1,4 +1,6 @@
 -- 漂流瓶系统数据库初始化脚本
+-- 版本: v1.1.0 (包含语音漂流瓶功能)
+-- 更新日期: 2024-12-13
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -77,6 +79,9 @@ CREATE TABLE IF NOT EXISTS `bottles` (
     `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT(11) NOT NULL,
     `content` TEXT NOT NULL,
+    `bottle_type` ENUM('text', 'voice') DEFAULT 'text' COMMENT '漂流瓶类型：text文字漂流瓶，voice语音漂流瓶',
+    `audio_file` VARCHAR(255) DEFAULT NULL COMMENT '语音文件路径（仅语音漂流瓶使用）',
+    `audio_duration` INT(11) DEFAULT NULL COMMENT '语音时长（秒）',
     `mood` ENUM('开心', '难过', '平静', '愤怒', '期待', '忧郁', '其他') DEFAULT '其他',
     `is_anonymous` TINYINT(1) DEFAULT 0,
     `likes` INT(11) DEFAULT 0,

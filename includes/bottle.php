@@ -217,7 +217,7 @@ function maskIpAddress($ip) {
 }
 
 // 创建漂流瓶
-function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他') {
+function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他', $bottleType = 'text', $audioFile = null, $audioDuration = 0) {
     $conn = getDbConnection();
     
     // 检查是否在免费次数范围内
@@ -233,13 +233,35 @@ function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他') {
         }
     }
     
+    // 验证漂流瓶类型和内容
+    if ($bottleType === 'voice') {
+        if (empty($audioFile)) {
+            $conn->close();
+            return ['success' => false, 'message' => '语音文件不能为空'];
+        }
+        // 语音漂流瓶使用默认内容或空内容
+        if (empty($content)) {
+            $content = '[语音漂流瓶]';
+        }
+    } else {
+        if (empty($content)) {
+            $conn->close();
+            return ['success' => false, 'message' => '漂流瓶内容不能为空'];
+        }
+    }
+    
     // 获取IP地址和位置信息
     $ipAddress = getClientIpAddress();
     $location = getLocationFromIp($ipAddress);
     
     // 创建漂流瓶
-    $stmt = $conn->prepare("INSERT INTO bottles (user_id, content, is_anonymous, mood, ip_address, location) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("isisss", $userId, $content, $isAnonymous, $mood, $ipAddress, $location);
+    if ($bottleType === 'voice') {
+        $stmt = $conn->prepare("INSERT INTO bottles (user_id, content, bottle_type, audio_file, audio_duration, is_anonymous, mood, ip_address, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssissss", $userId, $content, $bottleType, $audioFile, $audioDuration, $isAnonymous, $mood, $ipAddress, $location);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO bottles (user_id, content, bottle_type, is_anonymous, mood, ip_address, location) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ississs", $userId, $content, $bottleType, $isAnonymous, $mood, $ipAddress, $location);
+    }
     
     if ($stmt->execute()) {
         $bottleId = $conn->insert_id;
@@ -290,7 +312,7 @@ function pickRandomBottle($userId) {
     
     // 查找一个当前用户未捡起过且不是自己扔的漂流瓶
     $query = "
-        SELECT b.*, u.username, u.gender, u.is_vip as user_is_vip 
+        SELECT b.*, u.username, u.gender, u.is_vip as user_is_vip
         FROM bottles b
         JOIN users u ON b.user_id = u.id
         WHERE b.status = '漂流中' 

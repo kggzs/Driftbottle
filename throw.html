@@ -57,9 +57,56 @@
                         </div>
                         <div class="card-body">
                             <form id="throwBottleForm">
+                                <!-- 漂流瓶类型选择 -->
                                 <div class="form-group mb-4">
+                                    <label class="form-label">选择漂流瓶类型</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="bottleType" id="bottleTypeText" value="text" checked>
+                                        <label class="btn btn-outline-primary" for="bottleTypeText">
+                                            <i class="fas fa-pen"></i> 文字漂流瓶
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="bottleType" id="bottleTypeVoice" value="voice">
+                                        <label class="btn btn-outline-primary" for="bottleTypeVoice">
+                                            <i class="fas fa-microphone"></i> 语音漂流瓶
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- 文字内容区域 -->
+                                <div class="form-group mb-4" id="textContentArea">
                                     <label for="bottleContent" class="form-label">写下你想说的话</label>
                                     <textarea class="form-control" id="bottleContent" name="bottleContent" rows="6" placeholder="在这里写下你的心情、秘密或想法..."></textarea>
+                                </div>
+                                
+                                <!-- 语音录制区域 -->
+                                <div class="form-group mb-4" id="voiceContentArea" style="display: none;">
+                                    <label class="form-label">录制你的语音</label>
+                                    <div class="voice-recorder border rounded p-4 text-center">
+                                        <div id="recordingStatus" class="mb-3">
+                                            <i class="fas fa-microphone fa-3x text-muted"></i>
+                                            <p class="mt-2 text-muted">点击下方按钮开始录音</p>
+                                        </div>
+                                        <div id="recordingControls" class="mb-3">
+                                            <button type="button" class="btn btn-danger btn-lg" id="startRecordBtn">
+                                                <i class="fas fa-circle"></i> 开始录音
+                                            </button>
+                                            <button type="button" class="btn btn-warning btn-lg" id="stopRecordBtn" style="display: none;">
+                                                <i class="fas fa-stop"></i> 停止录音
+                                            </button>
+                                            <button type="button" class="btn btn-secondary btn-lg" id="playRecordBtn" style="display: none;">
+                                                <i class="fas fa-play"></i> 播放
+                                            </button>
+                                            <button type="button" class="btn btn-secondary btn-lg" id="deleteRecordBtn" style="display: none;">
+                                                <i class="fas fa-trash"></i> 重新录制
+                                            </button>
+                                        </div>
+                                        <div id="recordingTimer" class="mb-2" style="display: none;">
+                                            <span class="badge bg-danger fs-6">录音时长: <span id="timerDisplay">00:00</span></span>
+                                        </div>
+                                        <audio id="audioPreview" controls style="display: none; width: 100%;" class="mt-3"></audio>
+                                        <input type="hidden" id="audioBlob" name="audioBlob">
+                                    </div>
                                 </div>
                                 
                                 <div class="form-group mb-4">
@@ -168,7 +215,7 @@
                 // 表单提交事件 - 使用onclick替代form submit
                 const submitBtn = document.getElementById('throwButton');
                 if (submitBtn) {
-                    submitBtn.onclick = function(e) {
+                    submitBtn.onclick = async function(e) {
                         e.preventDefault();
                         
                         // 防止重复提交
@@ -178,14 +225,24 @@
                         }
                         
                         try {
-                            const content = document.getElementById('bottleContent').value.trim();
+                            const bottleType = document.querySelector('input[name="bottleType"]:checked').value;
                             const mood = document.getElementById('mood').value;
                             const isAnonymous = document.getElementById('isAnonymous').checked ? 1 : 0;
                             const includeLocation = document.getElementById('locationCheckbox').checked ? 1 : 0;
                             
-                            if (content === '') {
-                                showAlert('请输入漂流瓶内容', 'danger');
-                                return false;
+                            // 验证内容
+                            if (bottleType === 'text') {
+                                const content = document.getElementById('bottleContent').value.trim();
+                                if (content === '') {
+                                    showAlert('请输入漂流瓶内容', 'danger');
+                                    return false;
+                                }
+                            } else if (bottleType === 'voice') {
+                                const audioBlob = document.getElementById('audioBlob').value;
+                                if (!audioBlob) {
+                                    showAlert('请先录制语音', 'danger');
+                                    return false;
+                                }
                             }
                             
                             // 设置防重复提交标记
@@ -193,44 +250,85 @@
                             submitBtn.disabled = true;
                             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在扔出...';
                             
+                            // 准备提交数据
+                            let submitData = {
+                                bottle_type: bottleType,
+                                mood: mood,
+                                is_anonymous: isAnonymous,
+                                include_location: includeLocation
+                            };
+                            
+                            if (bottleType === 'text') {
+                                submitData.content = document.getElementById('bottleContent').value.trim();
+                            } else if (bottleType === 'voice') {
+                                // 语音漂流瓶需要先上传音频文件
+                                const audioBlobData = document.getElementById('audioBlob').value;
+                                if (!audioBlobData) {
+                                    showAlert('请先录制语音', 'danger');
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
+                                    isSubmitting = false;
+                                    return false;
+                                }
+                                
+                                // 先上传音频文件
+                                try {
+                                    const audioBlob = dataURLtoBlob(audioBlobData);
+                                    const formData = new FormData();
+                                    formData.append('audio', audioBlob, 'voice_' + Date.now() + '.webm');
+                                    
+                                    const uploadResponse = await fetch('api.php?action=upload_audio', {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+                                    
+                                    const uploadResult = await uploadResponse.json();
+                                    if (!uploadResult.success) {
+                                        throw new Error(uploadResult.message || '音频上传失败');
+                                    }
+                                    
+                                    submitData.audio_file = uploadResult.audio_file;
+                                    submitData.audio_duration = uploadResult.audio_duration || 0;
+                                } catch (uploadError) {
+                                    Logger.error('音频上传错误:', uploadError);
+                                    showAlert('音频上传失败：' + uploadError.message, 'danger');
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
+                                    isSubmitting = false;
+                                    return false;
+                                }
+                            }
+                            
                             // 提交扔瓶请求
-                            fetch('api.php?action=create_bottle', {
+                            const response = await fetch('api.php?action=create_bottle', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    content, 
-                                    mood, 
-                                    is_anonymous: isAnonymous,
-                                    include_location: includeLocation
-                                })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    showAlert('漂流瓶已成功扔出！', 'success');
-                                    document.getElementById('bottleContent').value = '';
-                                    document.getElementById('isAnonymous').checked = false;
-                                    
-                                    // 更新积分和限制信息
-                                    updateUserPointsDisplay(data.is_free, data.points_deducted);
-                                    getDailyLimits();
-                                } else {
-                                    showAlert(data.message, 'danger');
-                                }
-                            })
-                            .catch(error => {
-                                Logger.error('Error:', error);
-                                showAlert('发生错误，请稍后再试', 'danger');
-                            })
-                            .finally(() => {
-                                // 无论成功失败，都重置提交状态
-                                submitBtn.disabled = false;
-                                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
-                                isSubmitting = false;
+                                body: JSON.stringify(submitData)
                             });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                showAlert('漂流瓶已成功扔出！', 'success');
+                                document.getElementById('bottleContent').value = '';
+                                document.getElementById('isAnonymous').checked = false;
+                                
+                                // 重置语音录制
+                                if (typeof resetVoiceRecorder === 'function') {
+                                    resetVoiceRecorder();
+                                }
+                                
+                                // 更新积分和限制信息
+                                updateUserPointsDisplay(data.is_free, data.points_deducted);
+                                getDailyLimits();
+                            } else {
+                                showAlert(data.message, 'danger');
+                            }
                         } catch (e) {
                             Logger.error('Exception:', e);
                             showAlert('发生异常，请稍后再试', 'danger');
+                        } finally {
+                            // 无论成功失败，都重置提交状态
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 扔向大海';
                             isSubmitting = false;
@@ -250,6 +348,186 @@
                 }
             });
         });
+        
+        // 语音录制相关变量
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioBlob = null;
+        let recordingTimer = null;
+        let recordingStartTime = null;
+        
+        // 切换漂流瓶类型
+        document.addEventListener('DOMContentLoaded', function() {
+            const textRadio = document.getElementById('bottleTypeText');
+            const voiceRadio = document.getElementById('bottleTypeVoice');
+            const textArea = document.getElementById('textContentArea');
+            const voiceArea = document.getElementById('voiceContentArea');
+            
+            if (textRadio && voiceRadio) {
+                textRadio.addEventListener('change', function() {
+                    if (this.checked) {
+                        textArea.style.display = 'block';
+                        voiceArea.style.display = 'none';
+                        resetVoiceRecorder();
+                    }
+                });
+                
+                voiceRadio.addEventListener('change', function() {
+                    if (this.checked) {
+                        textArea.style.display = 'none';
+                        voiceArea.style.display = 'block';
+                        initVoiceRecorder();
+                    }
+                });
+            }
+        });
+        
+        // 初始化语音录制器
+        function initVoiceRecorder() {
+            // 检查浏览器支持
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('您的浏览器不支持录音功能，请使用Chrome、Firefox或Edge浏览器', 'warning');
+                return;
+            }
+        }
+        
+        // 开始录音
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('startRecordBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', async function() {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        
+                        mediaRecorder.ondataavailable = function(event) {
+                            audioChunks.push(event.data);
+                        };
+                        
+                        mediaRecorder.onstop = function() {
+                            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audioPreview = document.getElementById('audioPreview');
+                            audioPreview.src = audioUrl;
+                            audioPreview.style.display = 'block';
+                            
+                            // 转换为base64
+                            const reader = new FileReader();
+                            reader.onloadend = function() {
+                                document.getElementById('audioBlob').value = reader.result;
+                            };
+                            reader.readAsDataURL(audioBlob);
+                            
+                            // 停止所有音频轨道
+                            stream.getTracks().forEach(track => track.stop());
+                        };
+                        
+                        mediaRecorder.start();
+                        recordingStartTime = Date.now();
+                        
+                        // 更新UI
+                        document.getElementById('startRecordBtn').style.display = 'none';
+                        document.getElementById('stopRecordBtn').style.display = 'inline-block';
+                        document.getElementById('recordingStatus').innerHTML = '<i class="fas fa-microphone fa-3x text-danger"></i><p class="mt-2 text-danger">正在录音中...</p>';
+                        document.getElementById('recordingTimer').style.display = 'block';
+                        
+                        // 开始计时
+                        recordingTimer = setInterval(updateTimer, 1000);
+                    } catch (error) {
+                        Logger.error('录音失败:', error);
+                        showAlert('无法访问麦克风，请检查浏览器权限设置', 'danger');
+                    }
+                });
+            }
+            
+            // 停止录音
+            const stopBtn = document.getElementById('stopRecordBtn');
+            if (stopBtn) {
+                stopBtn.addEventListener('click', function() {
+                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                        clearInterval(recordingTimer);
+                        
+                        // 更新UI
+                        document.getElementById('startRecordBtn').style.display = 'inline-block';
+                        document.getElementById('stopRecordBtn').style.display = 'none';
+                        document.getElementById('playRecordBtn').style.display = 'inline-block';
+                        document.getElementById('deleteRecordBtn').style.display = 'inline-block';
+                        document.getElementById('recordingStatus').innerHTML = '<i class="fas fa-check-circle fa-3x text-success"></i><p class="mt-2 text-success">录音完成</p>';
+                    }
+                });
+            }
+            
+            // 播放录音
+            const playBtn = document.getElementById('playRecordBtn');
+            if (playBtn) {
+                playBtn.addEventListener('click', function() {
+                    const audioPreview = document.getElementById('audioPreview');
+                    if (audioPreview.src) {
+                        audioPreview.play();
+                    }
+                });
+            }
+            
+            // 删除录音
+            const deleteBtn = document.getElementById('deleteRecordBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    resetVoiceRecorder();
+                });
+            }
+        });
+        
+        // 更新计时器
+        function updateTimer() {
+            if (recordingStartTime) {
+                const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timerDisplay').textContent = 
+                    String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
+        }
+        
+        // 重置录音器
+        function resetVoiceRecorder() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+            
+            audioChunks = [];
+            audioBlob = null;
+            recordingStartTime = null;
+            
+            document.getElementById('startRecordBtn').style.display = 'inline-block';
+            document.getElementById('stopRecordBtn').style.display = 'none';
+            document.getElementById('playRecordBtn').style.display = 'none';
+            document.getElementById('deleteRecordBtn').style.display = 'none';
+            document.getElementById('recordingStatus').innerHTML = '<i class="fas fa-microphone fa-3x text-muted"></i><p class="mt-2 text-muted">点击下方按钮开始录音</p>';
+            document.getElementById('recordingTimer').style.display = 'none';
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('audioPreview').src = '';
+            document.getElementById('audioBlob').value = '';
+            document.getElementById('timerDisplay').textContent = '00:00';
+        }
+        
+        // 将dataURL转换为Blob
+        function dataURLtoBlob(dataurl) {
+            const arr = dataurl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
         
         // 获取用户每日限制
         function getDailyLimits() {

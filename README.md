@@ -20,9 +20,10 @@
 - **个人资料**：管理个人信息，设置个性签名。
 - **漂流瓶操作**：
     - **扔瓶子**：写下心情或想法，投入大海。
-    - **捡瓶子**：随机捡起他人的漂流瓶。
+    - **语音漂流瓶**：🎤 录制语音消息，发布语音漂流瓶（支持录音、播放、时长显示）。
+    - **捡瓶子**：随机捡起他人的漂流瓶（支持文字和语音两种类型）。
     - **互动**：评论、点赞漂流瓶。
-    - **记录**：查看自己扔出和捡到的瓶子。
+    - **记录**：查看自己扔出和捡到的瓶子（支持语音播放）。
 - **性别标识**：男性漂流瓶 (蓝色 🔵)，女性漂流瓶 (粉色 🌸)。
 - **匿名选项**：可选择匿名发送，保护隐私。
 
@@ -65,7 +66,7 @@
 | 表名                 | 描述             |
 | :------------------- | :--------------- |
 | `users`              | 用户信息         |
-| `bottles`            | 漂流瓶内容       |
+| `bottles`            | 漂流瓶内容（支持文字和语音两种类型） |
 | `comments`           | 评论数据         |
 | `likes`              | 点赞记录         |
 | `pick_records`       | 捡瓶记录         |
@@ -129,6 +130,7 @@
       # 根据您的服务器环境调整命令
       chmod -R 755 /path/to/web/driftbottle
       chmod -R 777 /path/to/web/driftbottle/assets/images/uploads # 如果有上传功能
+      chmod -R 777 /path/to/web/driftbottle/uploads/audio # 语音文件存储目录
       chmod -R 777 /path/to/web/driftbottle/logs
       ```
 
@@ -155,6 +157,7 @@
     - `system_settings.sql`: 初始化或更新系统设置。
     - `vip_points_settings.sql`: VIP 和积分相关配置。
     - `update_announcements.sql`: 公告系统相关更新。
+    - `add_voice_bottle_fields.sql`: 添加语音漂流瓶功能（`bottle_type`、`audio_file`、`audio_duration` 字段）。
 
 ## ❓ 常见问题 (FAQ)
 
@@ -172,11 +175,18 @@
     - 检查 `assets/images/uploads` (或实际上传目录) 是否存在且具有写入权限。
     - 检查 PHP 配置中的 `upload_max_filesize` 和 `post_max_size` 限制。
 
-4.  **IP 地址归属地显示不正确？**
+4.  **语音功能无法使用？**
+    - 确保 `uploads/audio/` 目录存在且具有写入权限（755 或 777）。
+    - 检查是否已执行 `sql/add_voice_bottle_fields.sql` 数据库更新脚本。
+    - 语音录制功能需要 HTTPS 环境（生产环境要求）。
+    - 首次使用需要用户授权麦克风权限。
+    - 检查浏览器是否支持 `MediaRecorder API`（Chrome、Firefox、Edge 等现代浏览器）。
+
+5.  **IP 地址归属地显示不正确？**
     - 确认 `qqwry.dat` 文件存在于正确路径且文件完整。
     - 纯真 IP 库需要定期更新。
 
-5.  **API 调用失败或无响应？**
+6.  **API 调用失败或无响应？**
     - 确认 API 请求格式为 `api.php?action=your_action`。
     - 打开浏览器开发者工具 (F12)，检查“网络 (Network)”和“控制台 (Console)”选项卡是否有错误信息。
     - 检查服务器端的 PHP 或 Web 服务器错误日志。
@@ -198,8 +208,9 @@ POST /api.php?action=endpoint_name (with POST data)
 - `login`: 用户登录
 - `register`: 用户注册
 - `logout`: 用户登出
-- `create_bottle`: 创建漂流瓶
-- `pick_bottle`: 捡起漂流瓶
+- `create_bottle`: 创建漂流瓶（支持文字和语音两种类型）
+- `upload_audio`: 上传语音文件（用于语音漂流瓶）
+- `pick_bottle`: 捡起漂流瓶（自动识别文字/语音类型）
 - `comment_bottle`: 评论漂流瓶
 - `like_bottle`: 点赞漂流瓶
 - `user_bottles`: 获取用户扔出的瓶子
@@ -235,6 +246,8 @@ driftbottle/
 ├── ip/                     # (可能冗余) IP 数据库目录
 ├── logs/                   # 日志文件目录
 ├── sql/                    # SQL 脚本目录
+├── uploads/                # 用户上传文件目录
+│   └── audio/              # 语音文件存储目录
 ├── api.php                 # API 入口文件
 ├── index.html              # 前台首页
 ├── login.html              # 登录页
@@ -252,6 +265,16 @@ driftbottle/
 
 ## ⏳ 更新历史
 
+- **v1.1.0** (2024-12-13): 
+    - 🎤 **新增语音漂流瓶功能**：
+        - 支持录制和发布语音漂流瓶
+        - 支持播放语音内容
+        - 显示语音时长信息
+        - 前端页面（扔瓶、捡瓶、个人中心）全面支持语音播放
+        - 管理员后台支持语音播放和文件管理
+        - 删除漂流瓶时自动删除关联的语音文件
+    - 数据库新增字段：`bottles.bottle_type`、`bottles.audio_file`、`bottles.audio_duration`
+    - 新增 API 端点：`upload_audio`（语音文件上传）
 - **v1.0.2** (2025-04-21): 弃用伪静态 URL 格式，改为 `?action=` 参数；优化前端错误处理。
 - **v1.0.1** (2025-04-20): 增强安全措施；增加 VIP 会员和签到系统。
 - **v1.0.0** (初始版本): 实现基础的漂流瓶扔/捡、评论、点赞功能。
@@ -260,12 +283,14 @@ driftbottle/
 
 ## 💡 未来规划 (待定)
 
+- [x] ~~语音漂流瓶功能~~ ✅ 已实现
 - [ ] 漂流瓶内容分类/标签系统
 - [ ] 用户间私信功能
 - [ ] 漂流瓶收藏夹
 - [ ] 更丰富的用户个性化设置
 - [ ] 用户等级与成就系统
 - [ ] 移动端适配或 App 开发
+- [ ] 语音转文字功能（可选）
 
 ## 📜 开源协议
 
