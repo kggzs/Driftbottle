@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人信息 - 漂流瓶</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/css/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script>
+        window.pageHasCustomInit = true;
+    </script>
+    <style>
+        .alert-container {
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        .alert-container .alert {
+            pointer-events: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 576px) {
+            .alert-container .alert {
+                max-width: 90%;
+                width: 90%;
+                font-size: 14px;
+            }
+        }
+        
+        .profile-nav {
+            background-color: #f8f9fa;
+            padding: 0.5rem 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .profile-nav .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .profile-nav .nav-link {
+            color: #495057;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .profile-nav .nav-link:hover {
+            color: #0d6efd;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        
+        .profile-nav .nav-link.active {
+            color: #0d6efd;
+            background-color: transparent;
+            border-bottom: 2px solid #0d6efd;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+        
+        .content {
+            padding-top: 1rem;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            transition: box-shadow 0.15s ease-in-out;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .profile-nav {
+                padding: 0.4rem 0;
+                margin-bottom: 1rem;
+            }
+            
+            .profile-nav .nav-link {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">漂流瓶</a>
+            <div class="navbar-collapse">
+                <ul class="navbar-nav">
+                    <!-- 动态生成导航项 -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 个人中心导航 -->
+    <div class="profile-nav">
+        <div class="container">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="profile_info.html">个人信息</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="profile_bottles.html">我扔出的漂流瓶</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="profile_picked.html">我捡到的漂流瓶</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="alert-container" id="alertContainer"></div>
+        
+        <div class="content">
+            <div class="row">
+                <div class="col-md-10 offset-md-1">
+                    <!-- 个人资料部分 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="text-center">个人资料</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="profile-container">
+                                <div class="text-center">
+                                    <p>正在加载个人资料...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- VIP会员升级模块 -->
+                            <div class="vip-container card mb-4">
+                                <div class="card-header bg-warning text-dark">
+                                    <h4><i class="fas fa-crown"></i> VIP会员特权</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="vip-benefits mb-4">
+                                        <h5>会员特权：</h5>
+                                        <ul>
+                                            <li>查看完整IP地址和地理位置信息</li>
+                                            <li>每日签到获得额外积分</li>
+                                            <li>每日扔瓶和捡瓶次数大幅提高（每天重置）</li>
+                                            <li>专属VIP标识，让你更加醒目</li>
+                                            <li>所有特权每天自动刷新，无使用次数限制</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-12">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-coins text-warning"></i> 您当前积分: <span id="userPointsForVip" class="fw-bold">--</span>
+                                                <div class="mt-2 small">使用积分开通VIP会员，积分可通过每日签到、扔漂流瓶、收到点赞等方式获得</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-info-circle"></i> VIP特权说明：
+                                        <ul class="mb-0 small" id="vipLimitsInfo">
+                                            <li>加载中...</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="vip-status">
+                                        <h5 class="mb-3">选择开通时长：</h5>
+                                        <div class="row">
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="1" data-points="100">
+                                                    <div>1个月</div>
+                                                    <div><i class="fas fa-coins"></i> 100积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="3" data-points="250">
+                                                    <div>3个月</div>
+                                                    <div><i class="fas fa-coins"></i> 250积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="6" data-points="450">
+                                                    <div>6个月</div>
+                                                    <div><i class="fas fa-coins"></i> 450积分</div>
+                                                </button>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <button class="btn btn-outline-warning w-100" data-months="12" data-points="800">
+                                                    <div>12个月</div>
+                                                    <div><i class="fas fa-coins"></i> 800积分</div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="currentVipStatus" class="mt-4 text-center">
+                                            <!-- VIP状态将在这里动态显示 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 个性签名设置 -->
+                            <div class="signature-container mt-4">
+                                <h4>个性签名</h4>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="signatureInput" placeholder="设置你的个性签名...">
+                                    <button class="btn btn-primary" id="updateSignatureBtn">保存</button>
+                                </div>
+                                <small class="text-muted">个性签名会显示在你的漂流瓶上，让捡到瓶子的人更了解你</small>
+                            </div>
+                            
+                            <!-- 签到模块 -->
+                            <div class="checkin-container mt-4">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h4 class="mb-0">每日签到</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-7">
+                                                <div class="checkin-status">
+                                                    <p>连续签到: <span id="consecutiveDays">--</span> 天</p>
+                                                    <p>本月签到: <span id="monthlyCheckins">--</span> 天</p>
+                                                    <p>签到可获得<strong>1</strong>积分，连续签到7天额外奖励<strong>7</strong>积分！</p>
+                                                    <p id="vipCheckinBonus" class="d-none text-warning">
+                                                        <i class="fas fa-crown"></i> VIP会员每次签到额外获得<strong>2</strong>积分！
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5 text-center">
+                                                <button class="btn btn-success btn-lg" id="checkinBtn">
+                                                    <i class="fas fa-calendar-check"></i> 今日签到
+                                                </button>
+                                                <div id="checkinCompleted" class="mt-2 d-none">
+                                                    <span class="badge bg-success"><i class="fas fa-check"></i> 今日已签到</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 消息中心 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3>我的消息 <span class="badge bg-danger" id="unreadBadge">0</span></h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="messages-container">
+                                <div class="text-center" id="loadingMessages">
+                                    <p>正在加载消息...</p>
+                                </div>
+                                <div id="messagesList"></div>
+                                <div class="text-center d-none" id="noMessages">
+                                    <p>暂无消息</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>漂流瓶 &copy; 2023 版权所有</p>
+        </div>
+    </footer>
+    
+    <script src="assets/js/app.js"></script>
+    <script>
+        // 加载消息
+        function loadUserMessages() {
+            fetch('api.php?action=get_messages')
+                .then(response => response.json())
+                .then(data => {
+                    const loadingMessages = document.getElementById('loadingMessages');
+                    const messagesList = document.getElementById('messagesList');
+                    const noMessages = document.getElementById('noMessages');
+                    const unreadBadge = document.getElementById('unreadBadge');
+                    
+                    if (loadingMessages) loadingMessages.classList.add('d-none');
+                    
+                    if (data.success && data.messages && data.messages.length > 0) {
+                        let unreadCount = 0;
+                        let messagesHtml = '';
+                        
+                        data.messages.forEach(message => {
+                            if (!message.is_read) unreadCount++;
+                            const messageTime = new Date(message.created_at).toLocaleString();
+                            const messageClass = message.is_read ? '' : 'border-start border-primary border-3';
+                            
+                            messagesHtml += `
+                                <div class="card mb-2 ${messageClass}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="mb-1">来自: ${message.from_username || '未知用户'}</h6>
+                                                <p class="mb-1">${message.bottle_content || '消息内容'}</p>
+                                                <small class="text-muted">${messageTime}</small>
+                                            </div>
+                                            ${!message.is_read ? '<span class="badge bg-primary">未读</span>' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        messagesList.innerHTML = messagesHtml;
+                        if (unreadBadge) unreadBadge.textContent = unreadCount;
+                        if (noMessages) noMessages.classList.add('d-none');
+                    } else {
+                        messagesList.innerHTML = '';
+                        if (noMessages) noMessages.classList.remove('d-none');
+                        if (unreadBadge) unreadBadge.textContent = '0';
+                    }
+                })
+                .catch(error => {
+                    Logger.error('加载消息失败:', error);
+                    const loadingMessages = document.getElementById('loadingMessages');
+                    if (loadingMessages) {
+                        loadingMessages.innerHTML = '<p class="text-danger">加载消息失败，请稍后再试</p>';
+                    }
+                });
+        }
+        
+        // 页面初始化
+        async function initProfileInfoPage() {
+            Logger.log("个人信息页面初始化开始...");
+            
+            try {
+                window.userInfo = {};
+                
+                let alertContainer = document.getElementById('alertContainer');
+                if (!alertContainer) {
+                    alertContainer = document.createElement('div');
+                    alertContainer.id = 'alertContainer';
+                    alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                    document.body.appendChild(alertContainer);
+                }
+                
+                const checkinBtn = document.getElementById('checkinBtn');
+                if (checkinBtn) {
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 加载中...';
+                }
+                
+                const authResponse = await fetch('api.php?action=check_auth');
+                const authData = await authResponse.json();
+                
+                if (!authData.success || !authData.loggedIn) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                window.userInfo.id = authData.user_id;
+                window.userInfo.username = authData.username;
+                window.userInfo.points = authData.points || 0;
+                
+                // 并行加载数据
+                const [userRes, vipRes, pointsRes, limitsRes, vipPointsRes, messagesRes] = await Promise.allSettled([
+                    fetch('api.php?action=user_info'),
+                    fetch('api.php?action=check_vip_status'),
+                    fetch('api.php?action=get_points_config'),
+                    fetch('api.php?action=get_limits_config'),
+                    fetch('api.php?action=get_vip_points_config'),
+                    fetch('api.php?action=get_messages')
+                ]);
+                
+                if (userRes.status === 'fulfilled') {
+                    try {
+                        const userData = await userRes.value.json();
+                        if (userData.success) {
+                            updateUserProfileDisplay(userData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析用户信息失败:', e);
+                    }
+                }
+                
+                if (vipRes.status === 'fulfilled') {
+                    try {
+                        const vipData = await vipRes.value.json();
+                        if (vipData.success) {
+                            updateVipStatus(vipData);
+                            setTimeout(() => bindVipButtons(), 100);
+                        }
+                    } catch (e) {
+                        Logger.error('解析VIP状态失败:', e);
+                    }
+                }
+                
+                if (pointsRes.status === 'fulfilled') {
+                    try {
+                        const pointsData = await pointsRes.value.json();
+                        if (pointsData.success) {
+                            updatePointsConfigDisplay(pointsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析积分配置失败:', e);
+                    }
+                }
+                
+                if (limitsRes.status === 'fulfilled') {
+                    try {
+                        const limitsData = await limitsRes.value.json();
+                        if (limitsData.success) {
+                            updateLimitsConfigDisplay(limitsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析限制配置失败:', e);
+                    }
+                }
+                
+                if (vipPointsRes.status === 'fulfilled') {
+                    try {
+                        const vipPointsData = await vipPointsRes.value.json();
+                        if (vipPointsData.success) {
+                            updateVipPointsConfigDisplay(vipPointsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析VIP价格配置失败:', e);
+                    }
+                }
+                
+                // 加载消息
+                loadUserMessages();
+                
+                updateNavBarManually();
+                
+                setTimeout(() => {
+                    bindVipButtons();
+                    bindOtherEvents();
+                    
+                    const checkinBtn = document.getElementById('checkinBtn');
+                    if (checkinBtn && !checkinBtn.hasAttribute('data-bound')) {
+                        checkinBtn.setAttribute('data-bound', 'true');
+                        checkinBtn.addEventListener('click', function() {
+                            if (this.disabled) return;
+                            if (this.dataset.processing === 'true') return;
+                            this.dataset.processing = 'true';
+                            
+                            const originalText = this.innerHTML;
+                            this.disabled = true;
+                            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
+                            
+                            fetch('api.php?action=user_checkin', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({})
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAlert('签到成功！获得 ' + data.points_earned + ' 积分', 'success');
+                                    
+                                    if (window.userInfo) {
+                                        window.userInfo.points += data.points_earned;
+                                        const userPointsElement = document.getElementById('userPoints');
+                                        if (userPointsElement) {
+                                            userPointsElement.textContent = window.userInfo.points;
+                                        }
+                                        const userPointsForVip = document.getElementById('userPointsForVip');
+                                        if (userPointsForVip) {
+                                            userPointsForVip.textContent = window.userInfo.points;
+                                        }
+                                    }
+                                    
+                                    const consecutiveDaysElement = document.getElementById('consecutiveDays');
+                                    if (consecutiveDaysElement) {
+                                        consecutiveDaysElement.textContent = data.consecutive_days;
+                                    }
+                                    
+                                    const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+                                    if (monthlyCheckinsElement) {
+                                        monthlyCheckinsElement.textContent = data.monthly_checkins;
+                                    }
+                                    
+                                    this.disabled = true;
+                                    this.innerHTML = '今日已签到';
+                                    
+                                    const checkinCompleted = document.getElementById('checkinCompleted');
+                                    if (checkinCompleted) {
+                                        checkinCompleted.classList.remove('d-none');
+                                    }
+                                } else {
+                                    showAlert(data.message || '签到失败，请稍后再试', 'danger');
+                                    this.disabled = false;
+                                    this.innerHTML = originalText;
+                                }
+                                
+                                this.dataset.processing = 'false';
+                            })
+                            .catch(error => {
+                                Logger.error('签到失败:', error);
+                                showAlert('签到失败，请稍后再试', 'danger');
+                                this.disabled = false;
+                                this.innerHTML = originalText;
+                                this.dataset.processing = 'false';
+                            });
+                        });
+                    }
+                }, 200);
+            } catch (error) {
+                Logger.error('页面初始化错误:', error);
+                showAlert('页面加载失败，请刷新重试', 'danger');
+            }
+        }
+        
+        // 从 profile.html 提取的函数（简化版）
+        function updateUserProfileDisplay(data) {
+            const user = data.user;
+            
+            window.userInfo = {
+                ...window.userInfo,
+                id: user.id,
+                username: user.username,
+                gender: user.gender,
+                points: user.points,
+                signature: user.signature || '',
+                bottle_count: user.bottle_count,
+                like_count: user.like_count,
+                is_vip: user.is_vip || 0,
+                vip_level: user.vip_level || 0,
+                vip_expire_date: user.vip_expire_date || null,
+                experience: user.experience || 0,
+                level: user.level || 1,
+                next_level_exp: user.next_level_exp || 0,
+                current_level_exp: user.current_level_exp || 0,
+                exp_progress: user.exp_progress || 0
+            };
+            
+            const signatureInput = document.getElementById('signatureInput');
+            if (signatureInput) {
+                signatureInput.value = user.signature || '';
+            }
+            
+            if (user.is_vip) {
+                const vipCheckinBonus = document.getElementById('vipCheckinBonus');
+                if (vipCheckinBonus) {
+                    vipCheckinBonus.classList.remove('d-none');
+                }
+            }
+            const userPointsForVip = document.getElementById('userPointsForVip');
+            if (userPointsForVip) {
+                userPointsForVip.textContent = user.points;
+            }
+            
+            const experience = user.experience || 0;
+            const level = user.level || 1;
+            const expProgress = user.exp_progress || 0;
+            const expNeeded = (user.next_level_exp || 0) - experience;
+            
+            const profileHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>
+                            ${user.username} 
+                            <span class="badge bg-info ms-2">Lv.${level}</span>
+                            ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP会员</span>' : ''}
+                        </h4>
+                        
+                        <div class="mb-3 mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">经验值: ${experience}</small>
+                                <small class="text-muted">距离下一级还需: ${expNeeded > 0 ? expNeeded : 0}</small>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                     role="progressbar" 
+                                     style="width: ${expProgress}%" 
+                                     aria-valuenow="${expProgress}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${expProgress.toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">Lv.${level}</small>
+                                <small class="text-muted">Lv.${level + 1}</small>
+                            </div>
+                        </div>
+                        
+                        <p>性别: ${user.gender}</p>
+                        <p>注册时间: ${new Date(user.created_at).toLocaleString()}</p>
+                        ${user.signature ? `<p>个性签名: ${user.signature}</p>` : ''}
+                        ${user.is_vip ? `<p class="text-warning">VIP到期时间: ${new Date(user.vip_expire_date).toLocaleDateString()}</p>` : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stats">
+                            <p><i class="fas fa-coins text-warning"></i> 积分: <span id="userPoints">${user.points}</span></p>
+                            <p><i class="fas fa-bottle-water text-primary"></i> 扔出瓶子: ${user.bottle_count}</p>
+                            <p><i class="fas fa-heart text-danger"></i> 收到点赞: ${user.like_count}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const profileContainer = document.querySelector('.profile-container');
+            if (profileContainer) {
+                profileContainer.innerHTML = profileHtml;
+            }
+            
+            if (user.checkin_status) {
+                updateCheckinStatusDisplay(user.checkin_status);
+            } else {
+                loadCheckinStatus();
+            }
+        }
+        
+        function updateCheckinStatusDisplay(checkinStatus) {
+            const consecutiveDaysElement = document.getElementById('consecutiveDays');
+            if (consecutiveDaysElement) {
+                consecutiveDaysElement.textContent = checkinStatus.consecutive_days;
+            }
+            
+            const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+            if (monthlyCheckinsElement) {
+                monthlyCheckinsElement.textContent = checkinStatus.monthly_checkins;
+            }
+            
+            const checkinBtn = document.getElementById('checkinBtn');
+            const checkinCompleted = document.getElementById('checkinCompleted');
+            
+            if (checkinStatus.has_checked_today) {
+                if (checkinBtn) {
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '今日已签到';
+                }
+                if (checkinCompleted) {
+                    checkinCompleted.classList.remove('d-none');
+                }
+            } else {
+                if (checkinBtn) {
+                    checkinBtn.disabled = false;
+                    checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                }
+                if (checkinCompleted) {
+                    checkinCompleted.classList.add('d-none');
+                }
+            }
+        }
+        
+        function loadCheckinStatus() {
+            fetch('api.php?action=get_checkin_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateCheckinStatusDisplay(data);
+                    }
+                })
+                .catch(error => {
+                    Logger.error('获取签到状态失败:', error);
+                });
+        }
+        
+        function updateVipStatus(data) {
+            const statusContainer = document.getElementById('currentVipStatus');
+            
+            if (data.is_vip) {
+                statusContainer.innerHTML = `
+                    <div class="alert alert-warning mb-2">
+                        <strong><i class="fas fa-crown"></i> 您当前是VIP会员</strong>
+                        <p class="mb-0 small">到期时间: ${new Date(data.vip_expire_date).toLocaleDateString()}</p>
+                    </div>
+                    <p class="small">续费VIP可延长有效期</p>
+                `;
+            } else {
+                statusContainer.innerHTML = `
+                    <p>您还不是VIP会员</p>
+                    <p class="small">开通VIP享受更多特权</p>
+                `;
+            }
+            
+            if (window.userInfo) {
+                window.userInfo.is_vip = data.is_vip ? 1 : 0;
+                window.userInfo.vip_expire_date = data.vip_expire_date;
+            }
+        }
+        
+        function bindVipButtons() {
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            
+            vipButtons.forEach(button => {
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+            });
+            
+            const newVipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            
+            newVipButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const months = parseInt(this.dataset.months);
+                    const points = parseInt(this.dataset.points);
+                    
+                    if (window.userInfo && window.userInfo.points < points) {
+                        showAlert(`积分不足，开通${months}个月VIP需要${points}积分，您当前积分为${window.userInfo.points}`, 'warning');
+                        return;
+                    }
+                    
+                    if (confirm(`确定要开通${months}个月VIP会员，需消耗${points}积分吗？`)) {
+                        upgradeVip(months);
+                    }
+                });
+            });
+        }
+        
+        function upgradeVip(months) {
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            vipButtons.forEach(btn => btn.disabled = true);
+            
+            fetch('api.php?action=upgrade_vip', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ months: months, level: 1 })
+            })
+            .then(response => response.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    Logger.error('JSON解析错误:', e);
+                    throw new Error('服务器返回的数据格式不正确');
+                }
+            }))
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    fetch('api.php?action=check_vip_status')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                updateVipStatus(data);
+                                setTimeout(() => bindVipButtons(), 100);
+                            }
+                        });
+                    
+                    fetch('api.php?action=user_info')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                updateUserProfileDisplay(data);
+                            }
+                        });
+                    
+                    if (window.userInfo) {
+                        window.userInfo.is_vip = 1;
+                        window.userInfo.vip_level = 1;
+                        window.userInfo.vip_expire_date = data.vip_expire_date;
+                        
+                        const userPoints = document.getElementById('userPoints');
+                        const userPointsForVip = document.getElementById('userPointsForVip');
+                        if (userPoints) userPoints.textContent = data.remaining_points;
+                        if (userPointsForVip) userPointsForVip.textContent = data.remaining_points;
+                        
+                        const vipCheckinBonus = document.getElementById('vipCheckinBonus');
+                        if (vipCheckinBonus) vipCheckinBonus.classList.remove('d-none');
+                    }
+                } else {
+                    showAlert(data.message || '开通VIP失败，请稍后再试', 'danger');
+                }
+            })
+            .catch(error => {
+                Logger.error('Error during VIP upgrade:', error);
+                showAlert('开通VIP失败，请刷新页面后重试', 'danger');
+            })
+            .finally(() => {
+                vipButtons.forEach(btn => btn.disabled = false);
+            });
+        }
+        
+        function updatePointsConfigDisplay(data) {
+            const checkinPoints = data.config.POINTS_PER_CHECKIN;
+            const weeklyBonus = data.config.POINTS_PER_WEEKLY_CHECKIN;
+            const vipBonus = data.config.POINTS_PER_VIP_CHECKIN;
+            
+            const checkinInfoElement = document.querySelector('.checkin-status p:nth-child(3)');
+            if (checkinInfoElement) {
+                checkinInfoElement.innerHTML = `签到可获得<strong>${checkinPoints}</strong>积分，连续签到7天额外奖励<strong>${weeklyBonus}</strong>积分！`;
+            }
+            
+            const vipBonusElement = document.getElementById('vipCheckinBonus');
+            if (vipBonusElement) {
+                vipBonusElement.innerHTML = `<i class="fas fa-crown"></i> VIP会员每次签到额外获得<strong>${vipBonus}</strong>积分！`;
+            }
+        }
+        
+        function updateLimitsConfigDisplay(data) {
+            const standardBottleLimit = data.config.DAILY_BOTTLE_LIMIT || 5;
+            const standardPickLimit = data.config.DAILY_PICK_LIMIT || 5;
+            const vipBottleLimit = data.config.VIP_DAILY_BOTTLE_LIMIT || 20;
+            const vipPickLimit = data.config.VIP_DAILY_PICK_LIMIT || 20;
+            
+            const vipLimitsInfoElement = document.getElementById('vipLimitsInfo');
+            if (vipLimitsInfoElement) {
+                vipLimitsInfoElement.innerHTML = `
+                    <li>普通用户每天可扔${standardBottleLimit}个瓶子、捡${standardPickLimit}个瓶子</li>
+                    <li>VIP用户每天可扔${vipBottleLimit}个瓶子、捡${vipPickLimit}个瓶子</li>
+                    <li>所有次数限制在每天0点自动刷新</li>
+                    <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                `;
+            }
+        }
+        
+        function updateVipPointsConfigDisplay(data) {
+            const vip1Month = data.config.VIP_POINTS_1_MONTH;
+            const vip3Months = data.config.VIP_POINTS_3_MONTHS;
+            const vip6Months = data.config.VIP_POINTS_6_MONTHS;
+            const vip12Months = data.config.VIP_POINTS_12_MONTHS;
+            
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            vipButtons.forEach(button => {
+                const months = parseInt(button.getAttribute('data-months'));
+                let points = 0;
+                
+                switch (months) {
+                    case 1: points = vip1Month; break;
+                    case 3: points = vip3Months; break;
+                    case 6: points = vip6Months; break;
+                    case 12: points = vip12Months; break;
+                }
+                
+                if (points > 0) {
+                    button.setAttribute('data-points', points);
+                    const pointsDisplay = button.querySelector('div:nth-child(2)');
+                    if (pointsDisplay) {
+                        pointsDisplay.innerHTML = `<i class="fas fa-coins"></i> ${points}积分`;
+                    }
+                }
+            });
+        }
+        
+        function bindOtherEvents() {
+            const updateSignatureBtn = document.getElementById('updateSignatureBtn');
+            if (updateSignatureBtn && !updateSignatureBtn.hasEventListener) {
+                updateSignatureBtn.hasEventListener = true;
+                updateSignatureBtn.addEventListener('click', function() {
+                    const signature = document.getElementById('signatureInput').value.trim();
+                    
+                    if (signature.length > 50) {
+                        showAlert('签名最多50个字', 'warning');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    
+                    fetch('api.php?action=update_signature', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ signature: signature })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('个性签名更新成功', 'success');
+                            
+                            if (window.userInfo) {
+                                window.userInfo.signature = signature;
+                            }
+                            
+                            const signatureElement = document.querySelector('.profile-container .row .col-md-6:first-child p:nth-of-type(3)');
+                            if (signatureElement) {
+                                if (signature) {
+                                    signatureElement.textContent = `个性签名: ${signature}`;
+                                    signatureElement.style.display = 'block';
+                                } else {
+                                    signatureElement.style.display = 'none';
+                                }
+                            } else if (signature) {
+                                const profileCol = document.querySelector('.profile-container .row .col-md-6:first-child');
+                                if (profileCol) {
+                                    const signatureP = document.createElement('p');
+                                    signatureP.textContent = `个性签名: ${signature}`;
+                                    const timeElement = profileCol.querySelector('p:nth-of-type(2)');
+                                    if (timeElement) {
+                                        timeElement.insertAdjacentElement('afterend', signatureP);
+                                    } else {
+                                        profileCol.appendChild(signatureP);
+                                    }
+                                }
+                            }
+                        } else {
+                            showAlert(data.message || '更新签名失败', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        Logger.error('Error:', error);
+                        showAlert('更新签名失败，请稍后再试', 'danger');
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                    });
+                });
+            }
+        }
+        
+        function updateNavBarManually() {
+            const navbarContainer = document.querySelector('.navbar-nav');
+            if (!navbarContainer) return;
+            
+            if (window.userInfo && window.userInfo.id) {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="throw.html" class="nav-link">扔漂流瓶</a></li>
+                    <li class="nav-item"><a href="pick.html" class="nav-link">捡漂流瓶</a></li>
+                    <li class="nav-item"><a href="profile_info.html" class="nav-link">个人中心</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link logout-btn">退出登录</a></li>
+                `;
+                
+                const logoutBtn = document.querySelector('.logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        try {
+                            const response = await fetch('api.php?action=logout');
+                            const data = await response.json();
+                            if (data.success) {
+                                window.location.href = 'login.html';
+                            }
+                        } catch (error) {
+                            Logger.error('退出登录失败:', error);
+                        }
+                    });
+                }
+            } else {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="login.html" class="nav-link">登录</a></li>
+                    <li class="nav-item"><a href="register.html" class="nav-link">注册</a></li>
+                `;
+            }
+        }
+        
+        function showAlert(message, type = 'info') {
+            let alertContainer = document.getElementById('alertContainer');
+            
+            if (!alertContainer) {
+                alertContainer = document.createElement('div');
+                alertContainer.id = 'alertContainer';
+                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                document.body.appendChild(alertContainer);
+            }
+            
+            const alertId = 'alert-' + Date.now();
+            const alertElement = document.createElement('div');
+            alertElement.id = alertId;
+            alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+            alertElement.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            alertContainer.prepend(alertElement);
+            
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.profileInfoPageInitialized) {
+                return;
+            }
+            window.profileInfoPageInitialized = true;
+            
+            Logger.init();
+            initProfileInfoPage();
+        });
+    </script>
+</body>
+</html>
+

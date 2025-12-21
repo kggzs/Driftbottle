@@ -621,6 +621,26 @@ function getUserPickedBottles($userId) {
         if ($bottle['is_anonymous'] == 1) {
             $bottle['username'] = '匿名用户';
         }
+        
+        // 获取该漂流瓶的评论
+        $commentStmt = $conn->prepare("
+            SELECT c.*, u.username, u.gender 
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.bottle_id = ? 
+            ORDER BY c.created_at ASC
+        ");
+        $commentStmt->bind_param("i", $bottle['id']);
+        $commentStmt->execute();
+        $commentsResult = $commentStmt->get_result();
+        
+        $comments = [];
+        while ($comment = $commentsResult->fetch_assoc()) {
+            $comments[] = $comment;
+        }
+        $bottle['comments'] = $comments;
+        $commentStmt->close();
+        
         $bottles[] = $bottle;
     }
     
