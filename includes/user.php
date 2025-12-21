@@ -40,7 +40,7 @@ function registerUser($username, $password, $gender) {
 function loginUser($username, $password) {
     $conn = getDbConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, password, gender, points, signature, is_vip, vip_expire_date, vip_level, status FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, username, password, gender, points, experience, level, signature, is_vip, vip_expire_date, vip_level, status FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -80,6 +80,8 @@ function loginUser($username, $password) {
             $_SESSION['username'] = $user['username'];
             $_SESSION['gender'] = $user['gender'];
             $_SESSION['points'] = $user['points'];
+            $_SESSION['experience'] = $user['experience'] ?? 0;
+            $_SESSION['level'] = $user['level'] ?? 1;
             $_SESSION['signature'] = $user['signature'];
             $_SESSION['is_vip'] = $user['is_vip'];
             $_SESSION['vip_level'] = $user['vip_level'];
@@ -422,11 +424,158 @@ function setUserVip($userId, $months = 1, $level = 1) {
     ];
 }
 
+// 根据经验值计算等级
+// 等级计算公式：level = floor(sqrt(experience / 100)) + 1
+// 例如：0经验=1级，100经验=2级，400经验=3级，900经验=4级
+function calculateLevel($experience) {
+    return floor(sqrt($experience / 100)) + 1;
+}
+
+// 获取当前等级所需经验值
+function getExperienceForLevel($level) {
+    if ($level <= 1) {
+        return 0;
+    }
+    return pow($level - 1, 2) * 100;
+}
+
+// 获取下一等级所需经验值
+function getNextLevelExperience($currentLevel) {
+    return getExperienceForLevel($currentLevel + 1);
+}
+
+// 更新用户经验值
+function updateUserExperience($userId, $experience, $action) {
+    $conn = getDbConnection();
+    
+    try {
+        $conn->begin_transaction();
+        
+        // 更新用户经验值
+        $stmt = $conn->prepare("UPDATE users SET experience = experience + ? WHERE id = ?");
+        $stmt->bind_param("ii", $experience, $userId);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 获取更新后的经验值
+        $stmt = $conn->prepare("SELECT experience FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $newExperience = $result->fetch_assoc()['experience'];
+        $stmt->close();
+        
+        // 计算新等级
+        $newLevel = calculateLevel($newExperience);
+        
+        // 获取当前等级
+        $stmt = $conn->prepare("SELECT level FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $currentLevel = $result->fetch_assoc()['level'];
+        $stmt->close();
+        
+        // 如果等级提升，更新等级
+        if ($newLevel > $currentLevel) {
+            $stmt = $conn->prepare("UPDATE users SET level = ? WHERE id = ?");
+            $stmt->bind_param("ii", $newLevel, $userId);
+            $stmt->execute();
+            $stmt->close();
+        }
+        
+        // 记录经验值历史
+        $stmt = $conn->prepare("INSERT INTO experience_history (user_id, experience, action) VALUES (?, ?, ?)");
+        $stmt->bind_param("iis", $userId, $experience, $action);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 更新会话中的经验值和等级
+        if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $userId) {
+            $_SESSION['experience'] = $newExperience;
+            $_SESSION['level'] = $newLevel;
+        }
+        
+        $conn->commit();
+        $conn->close();
+        
+        return [
+            'success' => true,
+            'experience' => $newExperience,
+            'level' => $newLevel,
+            'level_up' => $newLevel > $currentLevel
+        ];
+    } catch (Exception $e) {
+        $conn->rollback();
+        $conn->close();
+        error_log("更新用户经验值失败: " . $e->getMessage());
+        return ['success' => false, 'message' => '更新经验值失败'];
+    }
+}
+
+// 直接设置用户经验值（管理员功能）
+function setUserExperience($userId, $experience) {
+    $conn = getDbConnection();
+    
+    try {
+        $conn->begin_transaction();
+        
+        // 获取当前经验值
+        $stmt = $conn->prepare("SELECT experience FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $currentExperience = $result->fetch_assoc()['experience'] ?? 0;
+        $stmt->close();
+        
+        // 计算经验值变化量
+        $experienceDiff = $experience - $currentExperience;
+        
+        // 更新用户经验值
+        $stmt = $conn->prepare("UPDATE users SET experience = ? WHERE id = ?");
+        $stmt->bind_param("ii", $experience, $userId);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 计算新等级
+        $newLevel = calculateLevel($experience);
+        
+        // 更新等级
+        $stmt = $conn->prepare("UPDATE users SET level = ? WHERE id = ?");
+        $stmt->bind_param("ii", $newLevel, $userId);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 记录经验值历史（记录变化量）
+        if ($experienceDiff != 0) {
+            $action = "管理员设置";
+            $stmt = $conn->prepare("INSERT INTO experience_history (user_id, experience, action) VALUES (?, ?, ?)");
+            $stmt->bind_param("iis", $userId, $experienceDiff, $action);
+            $stmt->execute();
+            $stmt->close();
+        }
+        
+        $conn->commit();
+        $conn->close();
+        
+        return [
+            'success' => true,
+            'experience' => $experience,
+            'level' => $newLevel
+        ];
+    } catch (Exception $e) {
+        $conn->rollback();
+        $conn->close();
+        error_log("设置用户经验值失败: " . $e->getMessage());
+        return ['success' => false, 'message' => '设置经验值失败'];
+    }
+}
+
 // 获取用户信息
 function getUserInfo($userId) {
     $conn = getDbConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, gender, signature, points, is_vip, vip_level, vip_expire_date, created_at FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id, username, gender, signature, points, experience, level, is_vip, vip_level, vip_expire_date, created_at FROM users WHERE id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -468,6 +617,12 @@ function getUserInfo($userId) {
         
         // 获取用户签到信息
         $user['checkin_status'] = getUserCheckinStatus($userId);
+        
+        // 计算等级相关信息
+        $user['next_level_exp'] = getNextLevelExperience($user['level']);
+        $user['current_level_exp'] = getExperienceForLevel($user['level']);
+        $user['exp_progress'] = $user['next_level_exp'] > 0 ? 
+            (($user['experience'] - $user['current_level_exp']) / ($user['next_level_exp'] - $user['current_level_exp']) * 100) : 0;
         
         $stmt->close();
         $conn->close();

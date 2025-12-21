@@ -61,3 +61,11 @@
 [13-Dec-2025 11:18:19 PRC] userCheckin函数调用完成，结果: 成功
 [13-Dec-2025 11:18:19 PRC] 响应内容: {"success":true,"consecutive_days":1,"points_earned":10,"is_weekly_bonus":false,"is_vip":false,"vip_bonus_points":0}
 [13-Dec-2025 11:18:19 PRC] ------- 签到请求结束 -------
+[21-Dec-2025 21:36:58 PRC] IP地理位置查询错误: 无法连接到IP查询服务
+[21-Dec-2025 21:36:58 PRC] PHP Warning:  unpack(): Type V: not enough input, need 4, have 0 in E:\www\Driftbottle\includes\ip_location.php on line 60
+[21-Dec-2025 21:36:58 PRC] PHP Warning:  unpack(): Type V: not enough input, need 4, have 1 in E:\www\Driftbottle\includes\ip_location.php on line 169
+[21-Dec-2025 21:37:15 PRC] IP地理位置查询错误: 无法连接到IP查询服务
+[21-Dec-2025 21:37:15 PRC] PHP Warning:  unpack(): Type V: not enough input, need 4, have 0 in E:\www\Driftbottle\includes\ip_location.php on line 60
+[21-Dec-2025 21:37:15 PRC] PHP Warning:  unpack(): Type V: not enough input, need 4, have 1 in E:\www\Driftbottle\includes\ip_location.php on line 169
+[21-Dec-2025 21:39:00 PRC] 记录登录日志失败: 执行记录登录日志查询失败: Cannot add or update a child row: a foreign key constraint fails (`driftbottle`.`admin_login_logs`, CONSTRAINT `admin_login_logs_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE)
+[21-Dec-2025 21:39:03 PRC] 记录登录日志失败: 执行记录登录日志查询失败: Cannot add or update a child row: a foreign key constraint fails (`driftbottle`.`admin_login_logs`, CONSTRAINT `admin_login_logs_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE)

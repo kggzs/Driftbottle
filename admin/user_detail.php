@@ -106,6 +106,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit_user') {
     $username = sanitizeInput($_POST['username'] ?? '');
     $signature = sanitizeInput($_POST['signature'] ?? '');
     $points = (int)($_POST['points'] ?? 0);
+    $experience = (int)($_POST['experience'] ?? 0);
     $is_vip = isset($_POST['is_vip']) ? 1 : 0;
     $vip_level = (int)($_POST['vip_level'] ?? 0);
     
@@ -143,6 +144,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit_user') {
             $pointsLogStmt->bind_param("iis", $userId, $pointsDiff, $pointsAction);
             $pointsLogStmt->execute();
             $pointsLogStmt->close();
+        }
+        
+        // 处理经验值变动（如果有）
+        $currentExperience = $user['experience'] ?? 0;
+        if ($experience != $currentExperience) {
+            require_once __DIR__ . '/../includes/user.php';
+            $expResult = setUserExperience($userId, $experience);
+            if ($expResult['success']) {
+                // 经验值设置成功
+            }
         }
         
         // 显示成功消息
@@ -199,6 +210,17 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                 <div class="mb-3">
                     <label class="form-label">积分</label>
                     <p class="form-control"><?php echo $user['points']; ?></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">经验值</label>
+                    <p class="form-control">
+                        <?php 
+                        $experience = $user['experience'] ?? 0;
+                        $level = $user['level'] ?? 1;
+                        echo $experience . ' (等级 ' . $level . ')';
+                        ?>
+                    </p>
                 </div>
                 
                 <div class="mb-3">
@@ -415,6 +437,11 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                     <div class="mb-3">
                         <label for="points" class="form-label">积分</label>
                         <input type="number" class="form-control" id="points" name="points" value="<?php echo $user['points']; ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="experience" class="form-label">经验值</label>
+                        <input type="number" class="form-control" id="experience" name="experience" value="<?php echo $user['experience'] ?? 0; ?>" min="0">
+                        <small class="form-text text-muted">当前等级: <?php echo $user['level'] ?? 1; ?></small>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="is_vip" name="is_vip" <?php echo $user['is_vip'] ? 'checked' : ''; ?>>

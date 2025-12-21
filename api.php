@@ -169,6 +169,8 @@ switch ($endpoint) {
             $response['username'] = $_SESSION['username'];
             $response['gender'] = $_SESSION['gender'];
             $response['points'] = $_SESSION['points'] ?? 0;
+            $response['experience'] = $_SESSION['experience'] ?? 0;
+            $response['level'] = $_SESSION['level'] ?? 1;
             $response['signature'] = $_SESSION['signature'] ?? '';
             $response['is_vip'] = $_SESSION['is_vip'] ?? 0;
             $response['vip_level'] = $_SESSION['vip_level'] ?? 0;
@@ -674,7 +676,12 @@ switch ($endpoint) {
                         'is_vip' => $userData['user']['is_vip'],
                         'bottle_count' => $userData['user']['bottle_count'],
                         'like_count' => $userData['user']['like_count'],
-                        'created_at' => $userData['user']['created_at']
+                        'created_at' => $userData['user']['created_at'],
+                        'experience' => $userData['user']['experience'] ?? 0,
+                        'level' => $userData['user']['level'] ?? 1,
+                        'next_level_exp' => $userData['user']['next_level_exp'] ?? 0,
+                        'current_level_exp' => $userData['user']['current_level_exp'] ?? 0,
+                        'exp_progress' => $userData['user']['exp_progress'] ?? 0
                     ];
                     
                     $response = ['success' => true, 'user' => $publicInfo];
@@ -757,6 +764,41 @@ switch ($endpoint) {
                 'POINTS_PER_LIKE' => POINTS_PER_LIKE
             ]
         ];
+        break;
+        
+    case 'get_experience_config':
+        // 返回系统中的经验值配置信息
+        $response = [
+            'success' => true,
+            'config' => [
+                'EXP_PER_BOTTLE' => EXP_PER_BOTTLE,
+                'EXP_PER_PICK' => EXP_PER_PICK,
+                'EXP_PER_COMMENT' => EXP_PER_COMMENT
+            ]
+        ];
+        break;
+        
+    case 'get_user_level_info':
+        // 获取用户等级信息
+        if (!isLoggedIn()) {
+            $response = ['success' => false, 'message' => '请先登录'];
+        } else {
+            require_once 'includes/user.php';
+            $userInfo = getUserInfo(getCurrentUserId());
+            if ($userInfo['success']) {
+                $user = $userInfo['user'];
+                $response = [
+                    'success' => true,
+                    'experience' => $user['experience'] ?? 0,
+                    'level' => $user['level'] ?? 1,
+                    'next_level_exp' => $user['next_level_exp'] ?? 0,
+                    'current_level_exp' => $user['current_level_exp'] ?? 0,
+                    'exp_progress' => $user['exp_progress'] ?? 0
+                ];
+            } else {
+                $response = $userInfo;
+            }
+        }
         break;
         
     case 'get_limits_config':

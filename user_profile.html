@@ -122,14 +122,46 @@
                     // 更新页面标题
                     document.title = `${user.username}的主页 - 漂流瓶`;
                     
+                    // 计算经验条进度
+                    const experience = user.experience || 0;
+                    const level = user.level || 1;
+                    const currentLevelExp = user.current_level_exp || 0;
+                    const nextLevelExp = user.next_level_exp || 0;
+                    const expProgress = user.exp_progress || 0;
+                    const expNeeded = nextLevelExp - experience;
+                    
                     // 构建用户资料HTML
                     const html = `
                         <div class="row">
                             <div class="col-md-7">
                                 <h3 class="mb-3">
                                     ${user.username} 
+                                    <span class="badge bg-info ms-2">Lv.${level}</span>
                                     ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP会员</span>' : ''}
                                 </h3>
+                                
+                                <!-- 经验条 -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted">经验值: ${experience}</small>
+                                        <small class="text-muted">距离下一级还需: ${expNeeded > 0 ? expNeeded : 0}</small>
+                                    </div>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                             role="progressbar" 
+                                             style="width: ${expProgress}%" 
+                                             aria-valuenow="${expProgress}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            ${expProgress.toFixed(1)}%
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <small class="text-muted">Lv.${level}</small>
+                                        <small class="text-muted">Lv.${level + 1}</small>
+                                    </div>
+                                </div>
+                                
                                 <p><strong>性别:</strong> ${user.gender}</p>
                                 <p><strong>注册时间:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
                                 ${user.signature ? `<p><strong>个性签名:</strong> ${user.signature}</p>` : ''}

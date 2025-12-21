@@ -1,6 +1,6 @@
 -- 漂流瓶系统数据库初始化脚本
--- 版本: v1.1.0 (包含语音漂流瓶功能)
--- 更新日期: 2024-12-13
+-- 版本: v1.2.0 (包含语音漂流瓶功能和用户等级系统)
+-- 更新日期: 2024-12-20
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `gender` ENUM('男', '女') NOT NULL,
     `signature` TEXT DEFAULT NULL,
     `points` INT(11) DEFAULT 0,
+    `experience` INT(11) DEFAULT 0 COMMENT '用户经验值',
+    `level` INT(11) DEFAULT 1 COMMENT '用户等级',
     `is_vip` TINYINT(1) DEFAULT 0,
     `vip_expire_date` DATE DEFAULT NULL,
     `vip_level` INT(11) DEFAULT 0,
@@ -147,6 +149,18 @@ CREATE TABLE IF NOT EXISTS `points_history` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 创建经验值历史表
+CREATE TABLE IF NOT EXISTS `experience_history` (
+    `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT(11) NOT NULL,
+    `experience` INT(11) NOT NULL COMMENT '获得的经验值（正数）或扣除的经验值（负数）',
+    `action` VARCHAR(255) NOT NULL COMMENT '操作类型：发漂流瓶、捡漂流瓶、评论等',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='经验值历史记录表';
+
 -- 创建消息中心表
 CREATE TABLE IF NOT EXISTS `messages` (
     `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
@@ -236,6 +250,16 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_name`, `
 ('VIP_POINTS_3_MONTHS', '250', 'VIP会员3个月开通积分', 'vip', 'number'),
 ('VIP_POINTS_6_MONTHS', '450', 'VIP会员6个月开通积分', 'vip', 'number'),
 ('VIP_POINTS_12_MONTHS', '800', 'VIP会员12个月开通积分', 'vip', 'number');
+
+-- 添加经验值规则配置
+INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_name`, `setting_group`, `setting_type`) VALUES
+-- 经验值规则设置
+('EXP_PER_BOTTLE', '10', '发漂流瓶获得经验值', 'experience', 'number'),
+('EXP_PER_PICK', '5', '捡漂流瓶获得经验值', 'experience', 'number'),
+('EXP_PER_COMMENT', '3', '评论获得经验值', 'experience', 'number')
+ON DUPLICATE KEY UPDATE 
+`setting_value` = VALUES(`setting_value`),
+`setting_name` = VALUES(`setting_name`);
 
 -- 更新超级管理员角色，确保拥有settings权限
 INSERT INTO `admin_roles` (`name`, `description`, `permissions`)

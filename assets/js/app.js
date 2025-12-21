@@ -883,12 +883,46 @@ async function initProfilePage() {
         const user = userResponse.user;
         const genderClass = user.gender === '男' ? '' : 'female';
         
+        // 计算经验条进度
+        const experience = user.experience || 0;
+        const level = user.level || 1;
+        const currentLevelExp = user.current_level_exp || 0;
+        const nextLevelExp = user.next_level_exp || 0;
+        const expProgress = user.exp_progress || 0;
+        const expNeeded = nextLevelExp - experience;
+        
         // 更新个人资料
         profileContainer.innerHTML = `
             <div class="profile-header">
                 <div class="profile-avatar ${genderClass}">${user.username.charAt(0).toUpperCase()}</div>
-                <h2 class="profile-username">${user.username}</h2>
+                <h2 class="profile-username">
+                    ${user.username} 
+                    <span class="badge bg-info ms-2">Lv.${level}</span>
+                    ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP</span>' : ''}
+                </h2>
                 <p>性别: ${user.gender} · 注册时间: ${utils.formatDate(user.created_at)}</p>
+            </div>
+            
+            <!-- 经验条 -->
+            <div class="mb-3 mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-muted">经验值: ${experience}</small>
+                    <small class="text-muted">距离下一级还需: ${expNeeded > 0 ? expNeeded : 0}</small>
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                         role="progressbar" 
+                         style="width: ${expProgress}%" 
+                         aria-valuenow="${expProgress}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        ${expProgress.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <small class="text-muted">Lv.${level}</small>
+                    <small class="text-muted">Lv.${level + 1}</small>
+                </div>
             </div>
             
             <div class="profile-stats">

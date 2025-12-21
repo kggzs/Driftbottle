@@ -60,6 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
             }
         }
         
+        // 经验值规则设置
+        if (isset($_POST['experience'])) {
+            foreach ($_POST['experience'] as $key => $value) {
+                $safeValue = (int)$value; // 确保经验值为整数
+                updateSetting($key, $safeValue);
+            }
+        }
+        
         $message = '设置已成功保存！';
         $messageType = 'success';
         
@@ -127,6 +135,9 @@ try {
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="vip-tab" data-bs-toggle="tab" data-bs-target="#vip" type="button" role="tab" aria-controls="vip" aria-selected="false">VIP价格设置</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="experience-tab" data-bs-toggle="tab" data-bs-target="#experience" type="button" role="tab" aria-controls="experience" aria-selected="false">经验值规则</button>
                 </li>
             </ul>
         </div>
@@ -219,6 +230,31 @@ try {
                         <?php else: ?>
                         <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle"></i> 未找到VIP价格设置。请确保已导入<code>vip_points_settings.sql</code>文件到数据库。
+                            <div class="mt-2">
+                                <a href="settings.php?reload=1" class="btn btn-sm btn-outline-primary">刷新页面</a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- 经验值规则设置 -->
+                    <div class="tab-pane fade" id="experience" role="tabpanel" aria-labelledby="experience-tab">
+                        <h4 class="mb-3">经验值规则设置</h4>
+                        <?php if (isset($settings['experience'])): ?>
+                        <div class="row">
+                            <?php foreach ($settings['experience'] as $setting): ?>
+                            <div class="col-md-6 mb-3">
+                                <label for="<?php echo $setting['setting_key']; ?>" class="form-label"><?php echo $setting['setting_name']; ?></label>
+                                <input type="number" class="form-control" id="<?php echo $setting['setting_key']; ?>" name="experience[<?php echo $setting['setting_key']; ?>]" value="<?php echo htmlspecialchars($setting['setting_value']); ?>" min="0">
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle"></i> 说明：以上设置用于配置不同操作获得的经验值。经验值用于计算用户等级，等级计算公式：level = floor(sqrt(experience / 100)) + 1
+                        </div>
+                        <?php else: ?>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 未找到经验值规则设置。请确保已导入<code>add_user_level_system.sql</code>文件到数据库。
                             <div class="mt-2">
                                 <a href="settings.php?reload=1" class="btn btn-sm btn-outline-primary">刷新页面</a>
                             </div>

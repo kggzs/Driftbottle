@@ -32,6 +32,7 @@
 - **VIP 会员**：购买 VIP 享受更多特权（如：更多扔/捡瓶次数、专属标识）。
 - **签到系统**：每日签到获取积分，连续签到有额外奖励。
 - **积分系统**：通过多种方式赚取积分，兑换系统特权。
+- **用户等级系统**：🎯 通过发漂流瓶、捡漂流瓶、评论等操作获得经验值，自动升级等级，在个人主页显示等级和经验条。
 - **IP 保护**：VIP 用户 IP 地址完全隐藏，普通用户部分隐藏。
 - **消息中心**：接收系统通知和互动消息。
 
@@ -45,9 +46,9 @@
 
 ### ⚙️ 管理员功能
 
-- **用户管理**：查看、封禁/解封用户，重置密码。
+- **用户管理**：查看、封禁/解封用户，重置密码，设置用户经验值和等级。
 - **内容管理**：管理漂流瓶、评论，发布公告。
-- **系统设置**：配置基础参数、积分规则、VIP 特权、安全策略。
+- **系统设置**：配置基础参数、积分规则、经验值规则、VIP 特权、安全策略。
 - **数据统计**：监控用户活跃度、漂流瓶数据、系统运行状态。
 
 ## 🛠️ 技术栈
@@ -72,6 +73,7 @@
 | `pick_records`       | 捡瓶记录         |
 | `checkins`           | 签到记录         |
 | `points_history`     | 积分历史         |
+| `experience_history` | 经验值历史       |
 | `announcements`      | 系统公告         |
 | `admin_roles`        | 管理员角色       |
 | `admins`             | 管理员账号       |
@@ -158,6 +160,7 @@
     - `vip_points_settings.sql`: VIP 和积分相关配置。
     - `update_announcements.sql`: 公告系统相关更新。
     - `add_voice_bottle_fields.sql`: 添加语音漂流瓶功能（`bottle_type`、`audio_file`、`audio_duration` 字段）。
+    - `add_user_level_system.sql`: 添加用户等级系统（`experience`、`level` 字段和 `experience_history` 表）。
 
 ## ❓ 常见问题 (FAQ)
 
@@ -217,6 +220,8 @@ POST /api.php?action=endpoint_name (with POST data)
 - `user_picked_bottles`: 获取用户捡到的瓶子
 - `get_announcements`: 获取系统公告
 - `get_basic_settings`: 获取系统基本配置
+- `get_experience_config`: 获取经验值规则配置
+- `get_user_level_info`: 获取用户等级信息
 - ... (更多接口请参考 `api.php` 源码)
 
 ## 📁 项目结构
@@ -265,6 +270,17 @@ driftbottle/
 
 ## ⏳ 更新历史
 
+- **v1.2.0** (2024-12-20): 
+    - 🎯 **新增用户等级系统**：
+        - 通过发漂流瓶、捡漂流瓶、评论等操作自动获得经验值
+        - 根据经验值自动计算用户等级（等级公式：level = floor(sqrt(experience / 100)) + 1）
+        - 在个人主页和用户公开主页显示等级徽章和经验条
+        - 后台管理员可以查看和设置用户经验值
+        - 后台系统设置中可以配置各项操作获得的经验值
+        - 经验值历史记录功能
+    - 数据库新增字段：`users.experience`、`users.level`
+    - 数据库新增表：`experience_history`（经验值历史记录表）
+    - 新增 API 端点：`get_experience_config`、`get_user_level_info`
 - **v1.1.0** (2024-12-13): 
     - 🎤 **新增语音漂流瓶功能**：
         - 支持录制和发布语音漂流瓶
@@ -279,22 +295,21 @@ driftbottle/
 - **v1.0.1** (2025-04-20): 增强安全措施；增加 VIP 会员和签到系统。
 - **v1.0.0** (初始版本): 实现基础的漂流瓶扔/捡、评论、点赞功能。
 
-详细更新内容请查阅 <mcfile name="CHANGELOG.md" path="e:\phpstudy_pro\Driftbottle\Driftbottle\CHANGELOG.md"></mcfile> 文件。
+详细更新内容请查阅 <mcfile name="CHANGELOG.md" path="\CHANGELOG.md"></mcfile> 文件。
 
 ## 💡 未来规划 (待定)
 
 - [x] ~~语音漂流瓶功能~~ ✅ 已实现
+- [x] ~~用户等级与成就系统~~ ✅ 已实现
 - [ ] 漂流瓶内容分类/标签系统
 - [ ] 用户间私信功能
 - [ ] 漂流瓶收藏夹
 - [ ] 更丰富的用户个性化设置
-- [ ] 用户等级与成就系统
 - [ ] 移动端适配或 App 开发
-- [ ] 语音转文字功能（可选）
 
 ## 📜 开源协议
 
-本项目基于 **MIT 许可证** 开源。详情请见 <mcfile name="LICENSE" path="e:\phpstudy_pro\Driftbottle\Driftbottle\LICENSE"></mcfile> 文件。
+本项目基于 **MIT 许可证** 开源。详情请见 <mcfile name="LICENSE" path="\LICENSE"></mcfile> 文件。
 
 ## 🔒 安全建议
 

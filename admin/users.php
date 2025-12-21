@@ -539,6 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <th>性别</th>
                             <th>签名</th>
                             <th>积分</th>
+                            <th>经验值/等级</th>
                             <th>VIP状态</th>
                             <th>账号状态</th>
                             <th>注册时间</th>
@@ -559,6 +560,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td><?php echo $user['gender']; ?></td>
                                 <td><?php echo mb_substr(htmlspecialchars($user['signature'] ?? ''), 0, 20) . (mb_strlen($user['signature'] ?? '') > 20 ? '...' : ''); ?></td>
                                 <td><?php echo $user['points']; ?></td>
+                                <td>
+                                    <?php 
+                                    $experience = $user['experience'] ?? 0;
+                                    $level = $user['level'] ?? 1;
+                                    ?>
+                                    <span class="badge bg-info">Lv.<?php echo $level; ?></span>
+                                    <div class="small text-muted mt-1">
+                                        经验: <?php echo $experience; ?>
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="badge bg-<?php echo $user['is_vip'] ? 'success' : 'secondary'; ?>">
                                         <?php echo $user['is_vip'] ? 'VIP' . $user['vip_level'] : '普通用户'; ?>

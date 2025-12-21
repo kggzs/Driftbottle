@@ -279,12 +279,19 @@ function createBottle($userId, $content, $isAnonymous = 0, $mood = '其他', $bo
             updateUserPoints($userId, -$pointsDeducted, '扔出漂流瓶');
         }
         
+        // 增加经验值
+        require_once __DIR__ . '/user.php';
+        $expResult = updateUserExperience($userId, EXP_PER_BOTTLE, '发漂流瓶');
+        
         $conn->close();
         return [
             'success' => true, 
             'bottle_id' => $bottleId,
             'is_free' => $isFreeThrow,
-            'points_deducted' => $isFreeThrow ? 0 : POINTS_PER_BOTTLE
+            'points_deducted' => $isFreeThrow ? 0 : POINTS_PER_BOTTLE,
+            'experience_gained' => EXP_PER_BOTTLE,
+            'level_up' => $expResult['level_up'] ?? false,
+            'new_level' => $expResult['level'] ?? null
         ];
     } else {
         $stmt->close();
@@ -359,6 +366,10 @@ function pickRandomBottle($userId) {
         // 更新今日捡瓶计数
         updateUserDailyLimit($userId, 'pick');
         
+        // 增加经验值
+        require_once __DIR__ . '/user.php';
+        $expResult = updateUserExperience($userId, EXP_PER_PICK, '捡漂流瓶');
+        
         // 获取点赞数
         $likeStmt = $conn->prepare("SELECT COUNT(*) as like_count FROM likes WHERE bottle_id = ?");
         $likeStmt->bind_param("i", $bottle['id']);
@@ -393,6 +404,11 @@ function pickRandomBottle($userId) {
         $hasLikedResult = $hasLikedStmt->get_result();
         $bottle['has_liked'] = ($hasLikedResult->num_rows > 0);
         $hasLikedStmt->close();
+        
+        // 添加经验值相关信息到返回结果
+        $bottle['experience_gained'] = EXP_PER_PICK;
+        $bottle['level_up'] = $expResult['level_up'] ?? false;
+        $bottle['new_level'] = $expResult['level'] ?? null;
         
         $stmt->close();
         $conn->close();
@@ -447,9 +463,18 @@ function commentAndThrowBottle($bottleId, $userId, $content) {
         }
         $bottleStmt->close();
         
+        // 给评论者增加经验值
+        require_once __DIR__ . '/user.php';
+        $expResult = updateUserExperience($userId, EXP_PER_COMMENT, '评论漂流瓶');
+        
         $stmt->close();
         $conn->close();
-        return ['success' => true];
+        return [
+            'success' => true,
+            'experience_gained' => EXP_PER_COMMENT,
+            'level_up' => $expResult['level_up'] ?? false,
+            'new_level' => $expResult['level'] ?? null
+        ];
     } else {
         $stmt->close();
         $conn->close();

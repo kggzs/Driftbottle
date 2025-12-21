@@ -127,6 +127,11 @@ define('VIP_POINTS_3_MONTHS', (int)getSetting('VIP_POINTS_3_MONTHS', 250));
 define('VIP_POINTS_6_MONTHS', (int)getSetting('VIP_POINTS_6_MONTHS', 450));
 define('VIP_POINTS_12_MONTHS', (int)getSetting('VIP_POINTS_12_MONTHS', 800));
 
+// 经验值规则配置
+define('EXP_PER_BOTTLE', (int)getSetting('EXP_PER_BOTTLE', 10));
+define('EXP_PER_PICK', (int)getSetting('EXP_PER_PICK', 5));
+define('EXP_PER_COMMENT', (int)getSetting('EXP_PER_COMMENT', 3));
+
 // 确保会话已启动
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
