@@ -26,6 +26,9 @@ define('DB_USER', 'root');
 define('DB_PASS', '6f80338a894a');
 define('DB_NAME', 'driftbottle');
 
+// 高德地图API Key
+define('AMAP_API_KEY', 'KEY');
+
 // 安全配置
 define('SESSION_LIFETIME', 86400); // 会话有效期（秒）
 define('MAX_LOGIN_ATTEMPTS', 5); // 最大登录尝试次数

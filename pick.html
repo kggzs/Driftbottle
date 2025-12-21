@@ -86,104 +86,201 @@
         </div>
     </footer>
     
+    <script>
+        // 标记页面已有自己的初始化逻辑，避免 app.js 重复初始化
+        window.pageHasCustomInit = true;
+    </script>
     <script src="assets/js/app.js"></script>
     <script>
         // 页面加载完成后执行
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // 默认配置常量（后续会从API获取）
             window.DAILY_PICK_LIMIT = 20;
             window.VIP_DAILY_PICK_LIMIT = 30;
             window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
             
-            // 检查登录状态
-            checkAuth(function(isLoggedIn) {
-                if (!isLoggedIn) {
+            try {
+                // 检查登录状态
+                const authResponse = await fetch('api.php?action=check_auth');
+                const authData = await authResponse.json();
+                
+                if (!authData.success || !authData.loggedIn) {
                     window.location.href = 'login.html';
                     return;
                 }
                 
-                // 获取系统配置常量
-            fetch('api.php?action=get_system_config')
-            .then(response => response.json())
-            .then(config => {
-                if (config.success) {
-                    // 更新配置常量
-                    window.DAILY_PICK_LIMIT = config.DAILY_PICK_LIMIT || window.DAILY_PICK_LIMIT;
-                    window.VIP_DAILY_PICK_LIMIT = config.VIP_DAILY_PICK_LIMIT || window.VIP_DAILY_PICK_LIMIT;
-                    window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
-                    
-                    // 更新VIP额外次数显示
-                    const vipExtraCount = document.getElementById('vipExtraCount');
-                    if (vipExtraCount) {
-                        vipExtraCount.textContent = window.VIP_PICK_EXTRA;
+                // 保存用户信息
+                if (!window.userInfo) window.userInfo = {};
+                window.userInfo.id = authData.user_id;
+                window.userInfo.username = authData.username;
+                
+                // 并行加载所有数据
+                const [configRes, limitsRes, vipRes, pickedRes] = await Promise.allSettled([
+                    fetch('api.php?action=get_system_config'),
+                    fetch('api.php?action=get_daily_limits'),
+                    fetch('api.php?action=check_vip_status'),
+                    fetch('api.php?action=user_picked_bottles')
+                ]);
+                
+                // 处理系统配置
+                if (configRes.status === 'fulfilled') {
+                    try {
+                        const config = await configRes.value.json();
+                        if (config.success) {
+                            window.DAILY_PICK_LIMIT = config.DAILY_PICK_LIMIT || window.DAILY_PICK_LIMIT;
+                            window.VIP_DAILY_PICK_LIMIT = config.VIP_DAILY_PICK_LIMIT || window.VIP_DAILY_PICK_LIMIT;
+                            window.VIP_PICK_EXTRA = window.VIP_DAILY_PICK_LIMIT - window.DAILY_PICK_LIMIT;
+                            
+                            const vipExtraCount = document.getElementById('vipExtraCount');
+                            if (vipExtraCount) {
+                                vipExtraCount.textContent = window.VIP_PICK_EXTRA;
+                            }
+                        }
+                    } catch (e) {
+                        Logger.error('解析系统配置失败:', e);
                     }
                 }
-            })
-                .catch(error => Logger.error('获取系统配置失败:', error))
-                .finally(() => {
-                    // 检查用户VIP状态
-                    checkVipStatus();
-                    
-                    // 获取用户限制信息
-                    getDailyLimits();
-                    
-                    // 获取已捡起的瓶子数量
-                    getPickedBottlesCount();
-                    
-                    // 初始化捡瓶页面
-                    initPickBottlePage();
-                });
-            });
+                
+                // 处理每日限制
+                if (limitsRes.status === 'fulfilled') {
+                    try {
+                        const limitsData = await limitsRes.value.json();
+                        if (limitsData.success) {
+                            updateDailyLimitsDisplay(limitsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析每日限制失败:', e);
+                    }
+                }
+                
+                // 处理VIP状态
+                if (vipRes.status === 'fulfilled') {
+                    try {
+                        const vipData = await vipRes.value.json();
+                        if (vipData.success) {
+                            updateVipStatusDisplay(vipData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析VIP状态失败:', e);
+                    }
+                }
+                
+                // 处理已捡起的瓶子数量
+                if (pickedRes.status === 'fulfilled') {
+                    try {
+                        const pickedData = await pickedRes.value.json();
+                        if (pickedData.success) {
+                            const bottleCount = pickedData.bottles ? pickedData.bottles.length : 0;
+                            document.getElementById('totalPickedCount').textContent = `已捡起: ${bottleCount} 个`;
+                        }
+                    } catch (e) {
+                        Logger.error('解析已捡起瓶子失败:', e);
+                    }
+                }
+                
+                // 初始化捡瓶页面
+                initPickBottlePage();
+                
+                // 手动更新导航栏
+                updateNavBarManually();
+            } catch (error) {
+                Logger.error('页面初始化错误:', error);
+                showAlert('页面加载失败，请刷新重试', 'danger');
+            }
         });
         
-        // 获取用户每日限制
-        function getDailyLimits() {
-            fetch('api.php?action=get_daily_limits')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const isVip = data.is_vip;
-                    const pickLimit = isVip ? window.VIP_DAILY_PICK_LIMIT : window.DAILY_PICK_LIMIT;
-                    
-                    document.getElementById('pickRemaining').textContent = data.pick_remaining;
-                    document.getElementById('pickLimit').textContent = pickLimit;
-                    
-                    // 显示VIP额外次数标签
-                    const vipBonusElement = document.getElementById('vipBonus');
-                    if (isVip) {
-                        vipBonusElement.style.display = 'inline-block';
-                    } else {
-                        vipBonusElement.style.display = 'none';
-                    }
-                    
-                    // 更新页脚提示信息
-                    const limitText = document.querySelector('.card-footer p:last-child small');
-                    if (limitText) {
-                        limitText.textContent = `普通用户每天最多可捡起${window.DAILY_PICK_LIMIT}个漂流瓶，VIP用户每天可捡${window.VIP_DAILY_PICK_LIMIT}个，次数在每天0点自动刷新！`;
-                    }
-                    
-                    // 更新按钮状态
-                    updatePickButton(data.pick_remaining <= 0);
-                    
-                    // 调试信息
-                    Logger.log("每日限制数据:", data);
-                    Logger.log(`用户状态: ${isVip ? 'VIP会员' : '普通用户'}, 今日剩余捡瓶次数: ${data.pick_remaining}/${pickLimit}`);
-                }
-            })
-            .catch(error => Logger.error('Error:', error));
+        // 更新每日限制显示
+        function updateDailyLimitsDisplay(data) {
+            const isVip = data.is_vip;
+            const pickLimit = isVip ? window.VIP_DAILY_PICK_LIMIT : window.DAILY_PICK_LIMIT;
+            
+            document.getElementById('pickRemaining').textContent = data.pick_remaining || 0;
+            document.getElementById('pickLimit').textContent = pickLimit;
+            
+            const vipBonusElement = document.getElementById('vipBonus');
+            if (isVip) {
+                vipBonusElement.style.display = 'inline-block';
+            } else {
+                vipBonusElement.style.display = 'none';
+            }
+            
+            const limitText = document.querySelector('.card-footer p:last-child small');
+            if (limitText) {
+                limitText.textContent = `普通用户每天最多可捡起${window.DAILY_PICK_LIMIT}个漂流瓶，VIP用户每天可捡${window.VIP_DAILY_PICK_LIMIT}个，次数在每天0点自动刷新！`;
+            }
+            
+            updatePickButton(data.pick_remaining <= 0);
         }
         
-        // 获取已捡起的漂流瓶数量
-        function getPickedBottlesCount() {
-            fetch('api.php?action=user_picked_bottles')
-            .then(response => response.json())
-            .then(data => {
+        // 更新VIP状态显示
+        function updateVipStatusDisplay(data) {
+            if (!window.userInfo) window.userInfo = {};
+            window.userInfo.is_vip = data.is_vip;
+        }
+        
+        // 手动更新导航栏
+        function updateNavBarManually() {
+            const navbarContainer = document.querySelector('.navbar-nav');
+            if (!navbarContainer) return;
+            
+            if (window.userInfo && window.userInfo.id) {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="throw.html" class="nav-link">扔漂流瓶</a></li>
+                    <li class="nav-item"><a href="pick.html" class="nav-link">捡漂流瓶</a></li>
+                    <li class="nav-item"><a href="profile.html" class="nav-link">个人中心</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link logout-btn">退出登录</a></li>
+                `;
+                
+                const logoutBtn = document.querySelector('.logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        try {
+                            const response = await fetch('api.php?action=logout');
+                            const data = await response.json();
+                            if (data.success) {
+                                window.location.href = 'login.html';
+                            }
+                        } catch (error) {
+                            Logger.error('退出登录失败:', error);
+                        }
+                    });
+                }
+            } else {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="login.html" class="nav-link">登录</a></li>
+                    <li class="nav-item"><a href="register.html" class="nav-link">注册</a></li>
+                `;
+            }
+        }
+        
+        // 获取用户每日限制（用于刷新）
+        async function getDailyLimits() {
+            try {
+                const response = await fetch('api.php?action=get_daily_limits');
+                const data = await response.json();
                 if (data.success) {
-                    const bottleCount = data.bottles.length;
+                    updateDailyLimitsDisplay(data);
+                }
+            } catch (error) {
+                Logger.error('获取每日限制失败:', error);
+            }
+        }
+        
+        // 获取已捡起的漂流瓶数量（用于刷新）
+        async function getPickedBottlesCount() {
+            try {
+                const response = await fetch('api.php?action=user_picked_bottles');
+                const data = await response.json();
+                if (data.success) {
+                    const bottleCount = data.bottles ? data.bottles.length : 0;
                     document.getElementById('totalPickedCount').textContent = `已捡起: ${bottleCount} 个`;
                 }
-            })
-            .catch(error => Logger.error('Error:', error));
+            } catch (error) {
+                Logger.error('获取已捡起瓶子失败:', error);
+            }
         }
         
         // 更新已捡起数量
@@ -426,28 +523,6 @@
             return html;
         }
         
-        // 检查VIP状态
-        function checkVipStatus() {
-            fetch('api.php?action=check_vip_status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 保存VIP状态到全局对象
-                    if (!window.userInfo) window.userInfo = {};
-                    window.userInfo.is_vip = data.is_vip;
-                    window.userInfo.vip_level = data.vip_level;
-                    window.userInfo.vip_expire_date = data.vip_expire_date;
-                    
-                    // 如果是VIP用户，更新UI显示
-                    if (data.is_vip) {
-                        // 可以在这里添加VIP专属UI元素
-                        const cardHeader = document.querySelector('.card-header h2');
-                        cardHeader.innerHTML = `捡一个漂流瓶 <span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP模式</span>`;
-                    }
-                }
-            })
-            .catch(error => Logger.error('Error:', error));
-        }
-    </script>
+        // 更新VIP状态显示（已在主初始化中调用）    </script>
 </body>
 </html>

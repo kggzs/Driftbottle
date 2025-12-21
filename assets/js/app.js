@@ -207,6 +207,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('当前页面路径:', window.location.pathname);
         console.log('当前页面名称:', currentPage);
         
+        // 检查页面是否有自定义初始化逻辑
+        if (window.pageHasCustomInit && (currentPage === 'throw.html' || currentPage === 'pick.html' || currentPage === 'profile.html')) {
+            // throw.html、pick.html 和 profile.html 有自己的完整初始化逻辑，包括导航栏更新
+            console.log(currentPage + ' 使用自定义初始化，跳过 app.js 初始化');
+            return;
+        }
+        
         // 加载网站基本设置
         await loadSiteSettings();
         

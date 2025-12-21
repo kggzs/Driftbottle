@@ -395,13 +395,32 @@ class Security {
      * @param bool $sanitize 是否对数据进行过滤
      */
     public static function outputJson($data, $sanitize = true) {
+        // 确保没有输出缓冲干扰
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        
         header('Content-Type: application/json; charset=utf-8');
         
         if ($sanitize) {
             $data = self::sanitizeJsonData($data);
         }
         
-        echo json_encode($data);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        // 检查 JSON 编码是否成功
+        if ($json === false) {
+            $error = json_last_error_msg();
+            error_log('JSON编码错误: ' . $error);
+            $data = [
+                'success' => false,
+                'message' => '服务器响应格式错误',
+                'error' => $error
+            ];
+            $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        
+        echo $json;
         exit;
     }
 } 

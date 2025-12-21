@@ -136,9 +136,10 @@
       chmod -R 777 /path/to/web/driftbottle/logs
       ```
 
-5.  **IP 地址库配置 (可选)**
-    - 如需显示 IP 归属地，下载纯真 IP 数据库 `qqwry.dat`。
-    - 将 `qqwry.dat` 文件放入 `ip/` 或 `includes/ip/` 目录（请根据 `ip_location.php` 中的实际路径确认）。
+5.  **IP 地址定位配置**
+    - 项目使用高德地图 IP 定位 API 进行 IP 地址归属地查询。
+    - API Key 已配置在 `includes/config.php` 中的 `AMAP_API_KEY` 常量，无需额外配置。
+    - 如需更换 API Key，请修改 `includes/config.php` 中的 `AMAP_API_KEY` 常量值。
 
 6.  **访问测试**
     - 打开浏览器访问您的网站地址。
@@ -186,8 +187,9 @@
     - 检查浏览器是否支持 `MediaRecorder API`（Chrome、Firefox、Edge 等现代浏览器）。
 
 5.  **IP 地址归属地显示不正确？**
-    - 确认 `qqwry.dat` 文件存在于正确路径且文件完整。
-    - 纯真 IP 库需要定期更新。
+    - 项目使用高德地图 IP 定位 API，需要确保服务器能够访问外网。
+    - 检查 `includes/config.php` 中的 `AMAP_API_KEY` 常量是否配置正确且有效。
+    - 查看 PHP 错误日志确认是否有网络请求失败的错误。
 
 6.  **API 调用失败或无响应？**
     - 确认 API 请求格式为 `api.php?action=your_action`。

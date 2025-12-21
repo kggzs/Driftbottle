@@ -13,6 +13,10 @@
     <script src="assets/js/bootstrap/bootstrap.bundle.min.js"></script>
     <!-- 添加日志工具类 -->
     <script src="assets/js/utils.js"></script>
+    <script>
+        // 标记页面已有自己的初始化逻辑，避免 app.js 重复初始化
+        window.pageHasCustomInit = true;
+    </script>
     <style>
         /* 提示消息样式 */
         .alert-container {
@@ -1292,225 +1296,523 @@
         }
         
         // 页面初始化
-        function initProfilePage() {
+        async function initProfilePage() {
             Logger.log("页面初始化开始...");
             
-            // 加载积分配置
-            loadPointsConfig();
-            
-            // 加载次数限制配置
-            loadLimitsConfig();
-            
-            // 加载VIP会员价格配置
-            loadVipPointsConfig();
-            
-            // 全局用户信息对象
-            window.userInfo = {};
-            
-            // 创建或重置提示信息容器
-            let alertContainer = document.getElementById('alertContainer');
-            if (!alertContainer) {
-                alertContainer = document.createElement('div');
-                alertContainer.id = 'alertContainer';
-                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
-                document.body.appendChild(alertContainer);
-            } else {
-                // 清空已有容器
-                alertContainer.innerHTML = '';
-                // 更新样式确保一致性
-                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
-            }
-            
-            // 确保签到按钮初始状态为加载中
-            const checkinBtn = document.getElementById('checkinBtn');
-            if (checkinBtn) {
-                checkinBtn.disabled = true;
-                checkinBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 加载中...';
-            }
-            
-            const checkinCompleted = document.getElementById('checkinCompleted');
-            if (checkinCompleted) {
-                checkinCompleted.classList.add('d-none');
-            }
-            
-            // 设置模态框实例
-            window.commentModalInstance = new bootstrap.Modal(document.getElementById('commentModal'));
-            
-            // 1. 首先加载用户资料（包含签到状态）
-            loadUserProfile();
-            
-            // 2. 其他数据加载
-            loadUserBottles();
-            loadUserPickedBottles();
-            loadVipStatus();
-            
-            // 添加评论按钮到已有漂流瓶
-            addCommentButtonsToExistingBottles();
-            
-            // 设置DOM变化监听
-            setupMutationObserver();
-            
-            // 绑定各种事件
-            bindVipButtons();
-            
-            // 绑定签到按钮事件
-            if (checkinBtn) {
-                checkinBtn.addEventListener('click', function() {
-                    // 防止重复点击
-                    if (this.disabled) return;
+            try {
+                // 全局用户信息对象
+                window.userInfo = {};
+                
+                // 创建或重置提示信息容器
+                let alertContainer = document.getElementById('alertContainer');
+                if (!alertContainer) {
+                    alertContainer = document.createElement('div');
+                    alertContainer.id = 'alertContainer';
+                    alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                    document.body.appendChild(alertContainer);
+                } else {
+                    // 清空已有容器
+                    alertContainer.innerHTML = '';
+                    // 更新样式确保一致性
+                    alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                }
+                
+                // 确保签到按钮初始状态为加载中
+                const checkinBtn = document.getElementById('checkinBtn');
+                if (checkinBtn) {
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 加载中...';
+                }
+                
+                const checkinCompleted = document.getElementById('checkinCompleted');
+                if (checkinCompleted) {
+                    checkinCompleted.classList.add('d-none');
+                }
+                
+                // 设置模态框实例
+                window.commentModalInstance = new bootstrap.Modal(document.getElementById('commentModal'));
+                
+                // 检查登录状态
+                const authResponse = await fetch('api.php?action=check_auth');
+                const authData = await authResponse.json();
+                
+                if (!authData.success || !authData.loggedIn) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // 保存用户基本信息
+                window.userInfo.id = authData.user_id;
+                window.userInfo.username = authData.username;
+                window.userInfo.points = authData.points || 0;
+                
+                // 并行加载所有数据，提高性能
+                const [userRes, bottlesRes, pickedRes, vipRes, pointsRes, limitsRes, vipPointsRes] = await Promise.allSettled([
+                    fetch('api.php?action=user_info'),
+                    fetch('api.php?action=user_bottles'),
+                    fetch('api.php?action=user_picked_bottles'),
+                    fetch('api.php?action=check_vip_status'),
+                    fetch('api.php?action=get_points_config'),
+                    fetch('api.php?action=get_limits_config'),
+                    fetch('api.php?action=get_vip_points_config')
+                ]);
+                
+                // 处理用户信息（关键数据，优先处理）
+                if (userRes.status === 'fulfilled') {
+                    try {
+                        const userData = await userRes.value.json();
+                        if (userData.success) {
+                            updateUserProfileDisplay(userData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析用户信息失败:', e);
+                    }
+                }
+                
+                // 处理用户扔出的瓶子
+                if (bottlesRes.status === 'fulfilled') {
+                    try {
+                        const bottlesData = await bottlesRes.value.json();
+                        if (bottlesData.success) {
+                            updateUserBottlesDisplay(bottlesData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析用户瓶子失败:', e);
+                    }
+                }
+                
+                // 处理用户捡到的瓶子
+                if (pickedRes.status === 'fulfilled') {
+                    try {
+                        const pickedData = await pickedRes.value.json();
+                        if (pickedData.success) {
+                            updateUserPickedBottlesDisplay(pickedData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析捡到的瓶子失败:', e);
+                    }
+                }
+                
+                // 处理VIP状态
+                if (vipRes.status === 'fulfilled') {
+                    try {
+                        const vipData = await vipRes.value.json();
+                        if (vipData.success) {
+                            updateVipStatus(vipData);
+                            setTimeout(() => bindVipButtons(), 100);
+                        }
+                    } catch (e) {
+                        Logger.error('解析VIP状态失败:', e);
+                    }
+                }
+                
+                // 处理积分配置（非关键数据）
+                if (pointsRes.status === 'fulfilled') {
+                    try {
+                        const pointsData = await pointsRes.value.json();
+                        if (pointsData.success) {
+                            updatePointsConfigDisplay(pointsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析积分配置失败:', e);
+                    }
+                }
+                
+                // 处理限制配置（非关键数据）
+                if (limitsRes.status === 'fulfilled') {
+                    try {
+                        const limitsData = await limitsRes.value.json();
+                        if (limitsData.success) {
+                            updateLimitsConfigDisplay(limitsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析限制配置失败:', e);
+                    }
+                }
+                
+                // 处理VIP价格配置（非关键数据）
+                if (vipPointsRes.status === 'fulfilled') {
+                    try {
+                        const vipPointsData = await vipPointsRes.value.json();
+                        if (vipPointsData.success) {
+                            updateVipPointsConfigDisplay(vipPointsData);
+                        }
+                    } catch (e) {
+                        Logger.error('解析VIP价格配置失败:', e);
+                    }
+                }
+                
+                // 添加评论按钮到已有漂流瓶
+                addCommentButtonsToExistingBottles();
+                
+                // 设置DOM变化监听
+                setupMutationObserver();
+                
+                // 手动更新导航栏
+                updateNavBarManually();
+                
+                // 绑定其他事件（延迟绑定，确保VIP状态已更新）
+                setTimeout(() => {
+                    bindVipButtons();
+                    bindOtherEvents();
                     
-                    // 添加标记，防止重复提交
-                    if (this.dataset.processing === 'true') return;
-                    this.dataset.processing = 'true';
-                    
-                    this.disabled = true;
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 签到中...';
-                    
-                    // 显示正在处理的提示
-                    //showAlert('正在处理签到请求，请稍候...', 'info');
-                    
-                    // 设置超时计时器，避免请求长时间未响应
-                    let checkinTimeout = setTimeout(() => {
-                        this.disabled = false;
-                        this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
-                        this.dataset.processing = 'false';
-                        showAlert('签到请求超时，请稍后再试', 'warning');
-                    }, 15000); // 15秒超时
-                    
-                    // 重试机制变量
-                    let retryCount = 0;
-                    const maxRetries = 2;
-                    
-                    // 封装签到请求函数以便重试
-                    const sendCheckinRequest = () => {
-                        Logger.log(`发送签到请求 (尝试 ${retryCount + 1}/${maxRetries + 1})`);
-                        
-                        fetch('api.php?action=user_checkin', { 
-                            method: 'POST',
-                            headers: {
-                                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                                'Pragma': 'no-cache',
-                                'Expires': '0',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-Request-Time': new Date().getTime()
-                            },
-                            cache: 'no-store'
-                        })
-                        .then(response => {
-                            // 检查响应状态
-                            if (!response.ok) {
-                                throw new Error(`HTTP请求失败: ${response.status} ${response.statusText}`);
-                            }
+                    // 绑定签到按钮事件
+                    const checkinBtn = document.getElementById('checkinBtn');
+                    if (checkinBtn && !checkinBtn.hasAttribute('data-bound')) {
+                        checkinBtn.setAttribute('data-bound', 'true');
+                        checkinBtn.addEventListener('click', function() {
+                            // 防止重复点击
+                            if (this.disabled) return;
                             
-                            clearTimeout(checkinTimeout); // 清除超时计时器
+                            // 添加标记，防止重复提交
+                            if (this.dataset.processing === 'true') return;
+                            this.dataset.processing = 'true';
                             
-                            // 检查内容类型
-                            const contentType = response.headers.get('content-type');
-                            if (!contentType || !contentType.includes('application/json')) {
-                                throw new Error('响应不是JSON格式');
-                            }
+                            const originalText = this.innerHTML;
+                            this.disabled = true;
+                            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 签到中...';
                             
-                            return response.json();
-                        })
-                        .then(data => {
-                            Logger.log("签到响应:", data);
-                            
-                            if (data.success) {
-                                // 更新UI
-                                document.getElementById('checkinCompleted').classList.remove('d-none');
-                                
-                                // 更新签到按钮状态
-                                this.disabled = true;
-                                this.innerHTML = '今日已签到';
-                                
-                                // 更新签到信息
-                                const consecutiveDaysElement = document.getElementById('consecutiveDays');
-                                if (consecutiveDaysElement) {
-                                    consecutiveDaysElement.textContent = data.consecutive_days;
-                                }
-                                
-                                const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
-                                if (monthlyCheckinsElement) {
-                                    monthlyCheckinsElement.textContent = data.monthly_checkins || parseInt(monthlyCheckinsElement.textContent || '0') + 1;
-                                }
-                                
-                                // 更新积分信息
-                                const pointsGained = data.points_earned || 0;
-                                if (window.userInfo) {
-                                    window.userInfo.points = (window.userInfo.points || 0) + pointsGained;
-                                }
-                                
-                                // 更新积分显示
-                                const userPoints = document.getElementById('userPoints');
-                                if (userPoints) {
-                                    userPoints.textContent = window.userInfo.points;
-                                }
-                                
-                                const userPointsVip = document.getElementById('userPointsForVip');
-                                if (userPointsVip) {
-                                    userPointsVip.textContent = window.userInfo.points;
-                                }
-                                
-                                // 显示成功信息
-                                updateProfileDisplay();
-                                showAlert(`签到成功！获得${pointsGained}积分。${data.consecutive_days > 1 ? `连续签到${data.consecutive_days}天！` : ''}`, 'success');
-                            } else {
-                                if (data.message === '今天已经签到过了') {
-                                    // 已经签到过
+                            fetch('api.php?action=user_checkin', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({})
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAlert('签到成功！获得 ' + data.points_earned + ' 积分', 'success');
+                                    
+                                    // 更新积分显示
+                                    if (window.userInfo) {
+                                        window.userInfo.points += data.points_earned;
+                                        const userPointsElement = document.getElementById('userPoints');
+                                        if (userPointsElement) {
+                                            userPointsElement.textContent = window.userInfo.points;
+                                        }
+                                        const userPointsForVip = document.getElementById('userPointsForVip');
+                                        if (userPointsForVip) {
+                                            userPointsForVip.textContent = window.userInfo.points;
+                                        }
+                                    }
+                                    
+                                    // 更新签到状态
+                                    const consecutiveDaysElement = document.getElementById('consecutiveDays');
+                                    if (consecutiveDaysElement) {
+                                        consecutiveDaysElement.textContent = data.consecutive_days;
+                                    }
+                                    
+                                    const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+                                    if (monthlyCheckinsElement) {
+                                        monthlyCheckinsElement.textContent = data.monthly_checkins;
+                                    }
+                                    
+                                    // 禁用签到按钮
                                     this.disabled = true;
                                     this.innerHTML = '今日已签到';
-                                    document.getElementById('checkinCompleted').classList.remove('d-none');
-                                    showAlert('您今天已经签到过了', 'info');
+                                    
+                                    const checkinCompleted = document.getElementById('checkinCompleted');
+                                    if (checkinCompleted) {
+                                        checkinCompleted.classList.remove('d-none');
+                                    }
                                 } else {
-                                    // 其他错误
                                     showAlert(data.message || '签到失败，请稍后再试', 'danger');
                                     this.disabled = false;
-                                    this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                                    this.innerHTML = originalText;
                                 }
-                            }
-                        })
-                        .catch(error => {
-                            Logger.error('签到错误:', error);
-                            
-                            // 检查是否需要重试
-                            if (retryCount < maxRetries) {
-                                retryCount++;
-                                showAlert(`签到请求失败，正在重试(${retryCount}/${maxRetries})...`, 'warning');
-                                // 使用指数退避策略进行重试
-                                setTimeout(() => {
-                                    // 确保之前的超时计时器已清除
-                                    clearTimeout(checkinTimeout);
-                                    // 设置新的超时计时器
-                                    checkinTimeout = setTimeout(() => {
-                                        this.disabled = false;
-                                        this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
-                                        this.dataset.processing = 'false';
-                                        showAlert('签到请求超时，请稍后再试', 'warning');
-                                    }, 15000);
-                                    // 重新请求
-                                    sendCheckinRequest();
-                                }, 1000 * Math.pow(2, retryCount)); // 指数退避: 2秒, 4秒, ...
-                            } else {
-                                // 超过重试次数，显示错误
-                                clearTimeout(checkinTimeout);
-                                showAlert('签到失败，请刷新页面后重试', 'danger');
-                                this.disabled = false;
-                                this.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
-                            }
-                        })
-                        .finally(() => {
-                            if (retryCount >= maxRetries) {
-                                // 清除处理中标记
+                                
                                 this.dataset.processing = 'false';
-                            }
+                            })
+                            .catch(error => {
+                                Logger.error('签到失败:', error);
+                                showAlert('签到失败，请稍后再试', 'danger');
+                                this.disabled = false;
+                                this.innerHTML = originalText;
+                                this.dataset.processing = 'false';
+                            });
                         });
-                    };
-                    
-                    // 开始首次请求
-                    sendCheckinRequest();
-                });
+                    }
+                }, 200);
+            } catch (error) {
+                Logger.error('页面初始化错误:', error);
+                showAlert('页面加载失败，请刷新重试', 'danger');
+            }
+        }
+        
+        // 更新用户资料显示
+        function updateUserProfileDisplay(data) {
+            const user = data.user;
+            
+            // 更新全局用户信息
+            window.userInfo = {
+                ...window.userInfo,
+                id: user.id,
+                username: user.username,
+                gender: user.gender,
+                points: user.points,
+                signature: user.signature || '',
+                bottle_count: user.bottle_count,
+                like_count: user.like_count,
+                is_vip: user.is_vip || 0,
+                vip_level: user.vip_level || 0,
+                vip_expire_date: user.vip_expire_date || null,
+                experience: user.experience || 0,
+                level: user.level || 1,
+                next_level_exp: user.next_level_exp || 0,
+                current_level_exp: user.current_level_exp || 0,
+                exp_progress: user.exp_progress || 0
+            };
+            
+            // 更新签名输入框
+            const signatureInput = document.getElementById('signatureInput');
+            if (signatureInput) {
+                signatureInput.value = user.signature || '';
             }
             
+            // 更新VIP显示和积分
+            if (user.is_vip) {
+                const vipCheckinBonus = document.getElementById('vipCheckinBonus');
+                if (vipCheckinBonus) {
+                    vipCheckinBonus.classList.remove('d-none');
+                }
+            }
+            const userPointsForVip = document.getElementById('userPointsForVip');
+            if (userPointsForVip) {
+                userPointsForVip.textContent = user.points;
+            }
+            
+            // 计算经验条进度
+            const experience = user.experience || 0;
+            const level = user.level || 1;
+            const currentLevelExp = user.current_level_exp || 0;
+            const nextLevelExp = user.next_level_exp || 0;
+            const expProgress = user.exp_progress || 0;
+            const expNeeded = nextLevelExp - experience;
+            
+            // 创建个人资料显示
+            const profileHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>
+                            ${user.username} 
+                            <span class="badge bg-info ms-2">Lv.${level}</span>
+                            ${user.is_vip ? '<span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> VIP会员</span>' : ''}
+                        </h4>
+                        
+                        <!-- 经验条 -->
+                        <div class="mb-3 mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">经验值: ${experience}</small>
+                                <small class="text-muted">距离下一级还需: ${expNeeded > 0 ? expNeeded : 0}</small>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                     role="progressbar" 
+                                     style="width: ${expProgress}%" 
+                                     aria-valuenow="${expProgress}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${expProgress.toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">Lv.${level}</small>
+                                <small class="text-muted">Lv.${level + 1}</small>
+                            </div>
+                        </div>
+                        
+                        <p>性别: ${user.gender}</p>
+                        <p>注册时间: ${new Date(user.created_at).toLocaleString()}</p>
+                        ${user.signature ? `<p>个性签名: ${user.signature}</p>` : ''}
+                        ${user.is_vip ? `<p class="text-warning">VIP到期时间: ${new Date(user.vip_expire_date).toLocaleDateString()}</p>` : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stats">
+                            <p><i class="fas fa-coins text-warning"></i> 积分: <span id="userPoints">${user.points}</span></p>
+                            <p><i class="fas fa-bottle-water text-primary"></i> 扔出瓶子: ${user.bottle_count}</p>
+                            <p><i class="fas fa-heart text-danger"></i> 收到点赞: ${user.like_count}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const profileContainer = document.querySelector('.profile-container');
+            if (profileContainer) {
+                profileContainer.innerHTML = profileHtml;
+            }
+            
+            // 如果用户资料中包含签到状态，直接使用
+            if (user.checkin_status) {
+                updateCheckinStatusDisplay(user.checkin_status);
+            } else {
+                // 如果没有签到状态，单独请求
+                loadCheckinStatus();
+            }
+        }
+        
+        // 更新签到状态显示
+        function updateCheckinStatusDisplay(checkinStatus) {
+            const consecutiveDaysElement = document.getElementById('consecutiveDays');
+            if (consecutiveDaysElement) {
+                consecutiveDaysElement.textContent = checkinStatus.consecutive_days;
+            }
+            
+            const monthlyCheckinsElement = document.getElementById('monthlyCheckins');
+            if (monthlyCheckinsElement) {
+                monthlyCheckinsElement.textContent = checkinStatus.monthly_checkins;
+            }
+            
+            const checkinBtn = document.getElementById('checkinBtn');
+            const checkinCompleted = document.getElementById('checkinCompleted');
+            
+            if (checkinStatus.has_checked_today) {
+                if (checkinBtn) {
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '今日已签到';
+                }
+                if (checkinCompleted) {
+                    checkinCompleted.classList.remove('d-none');
+                }
+            } else {
+                if (checkinBtn) {
+                    checkinBtn.disabled = false;
+                    checkinBtn.innerHTML = '<i class="fas fa-calendar-check"></i> 今日签到';
+                }
+                if (checkinCompleted) {
+                    checkinCompleted.classList.add('d-none');
+                }
+            }
+        }
+        
+        // 更新用户瓶子显示
+        function updateUserBottlesDisplay(data) {
+            if (data.bottles && data.bottles.length > 0) {
+                loadUserBottles(); // 使用原有函数渲染
+            } else {
+                const container = document.querySelector('.bottles-container');
+                if (container) {
+                    container.innerHTML = '<div class="text-center"><p>你还没有扔出过漂流瓶</p></div>';
+                }
+            }
+        }
+        
+        // 更新用户捡到的瓶子显示
+        function updateUserPickedBottlesDisplay(data) {
+            if (data.bottles && data.bottles.length > 0) {
+                loadUserPickedBottles(); // 使用原有函数渲染
+            } else {
+                const container = document.querySelector('.picked-bottles-container');
+                if (container) {
+                    container.innerHTML = '<div class="text-center"><p>你还没有捡到过漂流瓶</p></div>';
+                }
+            }
+        }
+        
+        // 更新积分配置显示
+        function updatePointsConfigDisplay(data) {
+            const checkinPoints = data.config.POINTS_PER_CHECKIN;
+            const weeklyBonus = data.config.POINTS_PER_WEEKLY_CHECKIN;
+            const vipBonus = data.config.POINTS_PER_VIP_CHECKIN;
+            
+            const checkinInfoElement = document.querySelector('.checkin-status p:nth-child(3)');
+            if (checkinInfoElement) {
+                checkinInfoElement.innerHTML = `签到可获得<strong>${checkinPoints}</strong>积分，连续签到7天额外奖励<strong>${weeklyBonus}</strong>积分！`;
+            }
+            
+            const vipBonusElement = document.getElementById('vipCheckinBonus');
+            if (vipBonusElement) {
+                vipBonusElement.innerHTML = `<i class="fas fa-crown"></i> VIP会员每次签到额外获得<strong>${vipBonus}</strong>积分！`;
+            }
+        }
+        
+        // 更新限制配置显示
+        function updateLimitsConfigDisplay(data) {
+            const standardBottleLimit = data.config.DAILY_BOTTLE_LIMIT || 5;
+            const standardPickLimit = data.config.DAILY_PICK_LIMIT || 5;
+            const vipBottleLimit = data.config.VIP_DAILY_BOTTLE_LIMIT || 20;
+            const vipPickLimit = data.config.VIP_DAILY_PICK_LIMIT || 20;
+            
+            const vipLimitsInfoElement = document.getElementById('vipLimitsInfo');
+            if (vipLimitsInfoElement) {
+                vipLimitsInfoElement.innerHTML = `
+                    <li>普通用户每天可扔${standardBottleLimit}个瓶子、捡${standardPickLimit}个瓶子</li>
+                    <li>VIP用户每天可扔${vipBottleLimit}个瓶子、捡${vipPickLimit}个瓶子</li>
+                    <li>所有次数限制在每天0点自动刷新</li>
+                    <li>特权随会员有效期同步，到期自动恢复为普通用户权限</li>
+                `;
+            }
+        }
+        
+        // 更新VIP价格配置显示
+        function updateVipPointsConfigDisplay(data) {
+            const vip1Month = data.config.VIP_POINTS_1_MONTH;
+            const vip3Months = data.config.VIP_POINTS_3_MONTHS;
+            const vip6Months = data.config.VIP_POINTS_6_MONTHS;
+            const vip12Months = data.config.VIP_POINTS_12_MONTHS;
+            
+            const vipButtons = document.querySelectorAll('.vip-status button[data-months]');
+            vipButtons.forEach(button => {
+                const months = parseInt(button.getAttribute('data-months'));
+                let points = 0;
+                
+                switch (months) {
+                    case 1: points = vip1Month; break;
+                    case 3: points = vip3Months; break;
+                    case 6: points = vip6Months; break;
+                    case 12: points = vip12Months; break;
+                }
+                
+                if (points > 0) {
+                    button.setAttribute('data-points', points);
+                    const pointsDisplay = button.querySelector('div:nth-child(2)');
+                    if (pointsDisplay) {
+                        pointsDisplay.innerHTML = `<i class="fas fa-coins"></i> ${points}积分`;
+                    }
+                }
+            });
+        }
+        
+        // 手动更新导航栏
+        function updateNavBarManually() {
+            const navbarContainer = document.querySelector('.navbar-nav');
+            if (!navbarContainer) return;
+            
+            if (window.userInfo && window.userInfo.id) {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="throw.html" class="nav-link">扔漂流瓶</a></li>
+                    <li class="nav-item"><a href="pick.html" class="nav-link">捡漂流瓶</a></li>
+                    <li class="nav-item"><a href="profile.html" class="nav-link">个人中心</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link logout-btn">退出登录</a></li>
+                `;
+                
+                const logoutBtn = document.querySelector('.logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        try {
+                            const response = await fetch('api.php?action=logout');
+                            const data = await response.json();
+                            if (data.success) {
+                                window.location.href = 'login.html';
+                            }
+                        } catch (error) {
+                            Logger.error('退出登录失败:', error);
+                        }
+                    });
+                }
+            } else {
+                navbarContainer.innerHTML = `
+                    <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                    <li class="nav-item"><a href="login.html" class="nav-link">登录</a></li>
+                    <li class="nav-item"><a href="register.html" class="nav-link">注册</a></li>
+                `;
+            }
+        }
+        
+        // 注意：签到按钮事件绑定已在 initProfilePage 中处理，这里不再重复绑定
+        
+        // 绑定更新签名按钮事件（保留原有的事件绑定逻辑）
+        function bindOtherEvents() {
             // 绑定更新签名按钮事件
             const updateSignatureBtn = document.getElementById('updateSignatureBtn');
             if (updateSignatureBtn && !updateSignatureBtn.hasEventListener) {

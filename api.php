@@ -1,4 +1,11 @@
 <?php
+// 开启输出缓冲，防止任何意外输出
+ob_start();
+
+// 禁用错误显示，但保留错误日志
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 require_once 'includes/config.php';
 require_once 'includes/user.php';
 require_once 'includes/bottle.php';
@@ -8,6 +15,9 @@ require_once 'includes/validator.php';
 
 // 初始化安全中间件
 Security::init();
+
+// 清除输出缓冲区中的任何内容
+ob_clean();
 
 // 设置头信息为JSON
 header('Content-Type: application/json; charset=utf-8');
