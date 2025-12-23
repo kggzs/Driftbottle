@@ -27,7 +27,7 @@ define('DB_PASS', '6f80338a894a');
 define('DB_NAME', 'driftbottle');
 
 // 高德地图API Key
-define('AMAP_API_KEY', ''); //填写高德地图key
+define('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee'); //填写高德地图key
 
 // 安全配置
 define('SESSION_LIFETIME', 86400); // 会话有效期（秒）

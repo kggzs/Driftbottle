@@ -286,7 +286,7 @@
         };
         
         // 显示分页
-        function renderPagination(totalPages, currentPage) {
+        function renderPagination(totalPages, pageNum) {
             const paginationNav = document.getElementById('paginationNav');
             const pagination = document.getElementById('pagination');
             
@@ -300,13 +300,13 @@
             
             // 上一页按钮
             const prevLi = document.createElement('li');
-            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-            prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}">上一页</a>`;
+            prevLi.className = `page-item ${pageNum === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" data-page="${pageNum - 1}">上一页</a>`;
             pagination.appendChild(prevLi);
             
             // 页码按钮
-            const startPage = Math.max(1, currentPage - 2);
-            const endPage = Math.min(totalPages, currentPage + 2);
+            const startPage = Math.max(1, pageNum - 2);
+            const endPage = Math.min(totalPages, pageNum + 2);
             
             if (startPage > 1) {
                 const firstLi = document.createElement('li');
@@ -324,7 +324,7 @@
             
             for (let i = startPage; i <= endPage; i++) {
                 const li = document.createElement('li');
-                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                li.className = `page-item ${i === pageNum ? 'active' : ''}`;
                 li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
                 pagination.appendChild(li);
             }
@@ -345,27 +345,59 @@
             
             // 下一页按钮
             const nextLi = document.createElement('li');
-            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-            nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">下一页</a>`;
+            nextLi.className = `page-item ${pageNum === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" data-page="${pageNum + 1}">下一页</a>`;
             pagination.appendChild(nextLi);
             
-            // 绑定分页点击事件
-            pagination.querySelectorAll('a.page-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const page = parseInt(this.getAttribute('data-page'));
-                    if (page && page !== currentPage && page >= 1) {
+            // 移除旧的事件处理器（如果存在）
+            const oldHandler = pagination._paginationClickHandler;
+            if (oldHandler) {
+                pagination.removeEventListener('click', oldHandler);
+            }
+            
+            // 创建新的事件处理器
+            // 现在可以使用全局变量 currentPage，因为参数名不再遮蔽它
+            const paginationClickHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const link = e.target.closest('a.page-link');
+                if (!link) return;
+                
+                // 检查父元素是否有 disabled 类
+                const parentLi = link.closest('li.page-item');
+                if (parentLi && parentLi.classList.contains('disabled')) {
+                    return;
+                }
+                
+                const page = parseInt(link.getAttribute('data-page'));
+                if (page && !isNaN(page) && page >= 1) {
+                    if (typeof Logger !== 'undefined' && Logger.log) {
+                        Logger.log('分页点击，目标页码:', page, '当前页码（全局）:', currentPage);
+                    }
+                    // 现在可以正确访问和修改全局变量 currentPage
+                    if (page !== currentPage) {
                         currentPage = page;
+                        if (typeof Logger !== 'undefined' && Logger.log) {
+                            Logger.log('更新页码为:', currentPage);
+                        }
                         renderBottles(); // renderBottles 内部会重新计算 totalPages 并调用 renderPagination
                         // 滚动到顶部
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-                });
-            });
+                }
+            };
+            
+            // 保存事件处理器引用，以便下次移除
+            pagination._paginationClickHandler = paginationClickHandler;
+            pagination.addEventListener('click', paginationClickHandler);
         }
         
         // 渲染漂流瓶列表
         function renderBottles() {
+            if (typeof Logger !== 'undefined' && Logger.log) {
+                Logger.log('renderBottles 被调用，currentPage:', currentPage, 'allBottles.length:', allBottles.length);
+            }
             const container = document.querySelector('.picked-bottles-container');
             
             // 过滤已评论的漂流瓶
@@ -398,6 +430,10 @@
             const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
             const endIndex = startIndex + ITEMS_PER_PAGE;
             const pageBottles = filteredBottles.slice(startIndex, endIndex);
+            
+            if (typeof Logger !== 'undefined' && Logger.log) {
+                Logger.log('分页计算 - currentPage:', currentPage, 'totalPages:', totalPages, 'startIndex:', startIndex, 'endIndex:', endIndex, 'pageBottles.length:', pageBottles.length, 'filteredBottles.length:', filteredBottles.length);
+            }
             
             // 更新分页信息
             const paginationInfo = document.getElementById('paginationInfo');
