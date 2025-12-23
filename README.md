@@ -138,8 +138,7 @@
 
 5.  **IP 地址定位配置**
     - 项目使用高德地图 IP 定位 API 进行 IP 地址归属地查询。
-    - API Key 已配置在 `includes/config.php` 中的 `AMAP_API_KEY` 常量，无需额外配置。
-    - 如需更换 API Key，请修改 `includes/config.php` 中的 `AMAP_API_KEY` 常量值。
+    - API Key 在配置 `includes/config.php` 中的 `AMAP_API_KEY` 常量中，进行修改配置。
 
 6.  **访问测试**
     - 打开浏览器访问您的网站地址。
@@ -241,6 +240,13 @@ driftbottle/
 │   │   └── utils.js        # 工具函数
 │   ├── images/
 │   └── fonts/
+├── docs/                   # 文档目录
+│   ├── features/           # 功能文档
+│   │   ├── voice-bottle.md    # 语音漂流瓶功能
+│   │   └── vip-system.md      # VIP 会员系统
+│   ├── installation.md     # 安装与部署指南
+│   ├── upgrade.md         # 升级指南
+│   └── troubleshooting.md # 故障排除文档
 ├── includes/               # 后端核心类库和配置文件
 │   ├── config.php          # 数据库和系统配置
 │   ├── user.php            # 用户类
@@ -270,6 +276,15 @@ driftbottle/
 └── README.md               # 本文档
 ```
 
+## 📚 文档导航
+
+- [安装与部署指南](docs/installation.md) - 详细的安装步骤和配置说明
+- [升级指南](docs/upgrade.md) - 版本升级步骤和注意事项
+- [故障排除](docs/troubleshooting.md) - 常见问题和解决方案
+- [语音漂流瓶功能](docs/features/voice-bottle.md) - 语音功能使用说明
+- [VIP 会员系统](docs/features/vip-system.md) - VIP 系统功能说明
+- [更新日志](CHANGELOG.md) - 详细的版本更新历史
+
 ## ⏳ 更新历史
 
 - **v1.2.0** (2024-12-20): 
@@ -297,7 +312,7 @@ driftbottle/
 - **v1.0.1** (2025-04-20): 增强安全措施；增加 VIP 会员和签到系统。
 - **v1.0.0** (初始版本): 实现基础的漂流瓶扔/捡、评论、点赞功能。
 
-详细更新内容请查阅 <mcfile name="CHANGELOG.md" path="\CHANGELOG.md"></mcfile> 文件。
+详细更新内容请查阅 [CHANGELOG.md](CHANGELOG.md) 文件。
 
 ## 💡 未来规划 (待定)
 

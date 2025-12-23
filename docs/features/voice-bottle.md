@@ -1,4 +1,4 @@
-# 语音漂流瓶功能使用说明
+# 语音漂流瓶功能
 
 ## 功能概述
 
@@ -10,8 +10,8 @@
 
 执行以下SQL文件来更新数据库结构：
 
-```sql
--- 执行 sql/add_voice_bottle_fields.sql
+```bash
+mysql -u driftbottle_user -p driftbottle < sql/add_voice_bottle_fields.sql
 ```
 
 这个SQL文件会为 `bottles` 表添加以下字段：
@@ -32,9 +32,9 @@ mkdir -p uploads/audio
 chmod 755 uploads/audio
 ```
 
-### 3. 功能说明
+## 使用说明
 
-#### 发布语音漂流瓶
+### 发布语音漂流瓶
 
 1. 访问 `throw.html` 页面
 2. 选择"语音漂流瓶"选项
@@ -43,12 +43,17 @@ chmod 755 uploads/audio
 5. 可以点击"播放"预览录音
 6. 确认无误后点击"扔向大海"提交
 
-#### 捡起语音漂流瓶
+### 捡起语音漂流瓶
 
 1. 访问 `pick.html` 页面
 2. 点击"随机捡一个漂流瓶"
 3. 如果捡到的是语音漂流瓶，会显示音频播放器
 4. 点击播放按钮即可播放语音内容
+
+### 查看历史记录
+
+- 在"我扔出的漂流瓶"页面可以播放自己发布的语音
+- 在"我捡到的漂流瓶"页面可以播放捡到的语音漂流瓶
 
 ## 技术实现
 
@@ -57,6 +62,7 @@ chmod 755 uploads/audio
 - 使用 `MediaRecorder API` 进行录音
 - 录音格式：WebM（浏览器原生支持）
 - 录音数据转换为 Base64 格式上传
+- 支持音频播放控制和时长显示
 
 ### 后端
 
@@ -64,20 +70,23 @@ chmod 755 uploads/audio
 - 文件命名格式：`voice_{user_id}_{timestamp}_{uniqid}.webm`
 - 支持的文件类型：webm, mp3, wav, ogg
 - 文件大小限制：5MB
+- 删除漂流瓶时自动删除关联的语音文件
 
 ### 数据库
 
 - `bottles` 表新增字段：
-  - `bottle_type`: ENUM('text', 'voice')
-  - `audio_file`: VARCHAR(255)
-  - `audio_duration`: INT(11)
+  - `bottle_type`: ENUM('text', 'voice') DEFAULT 'text'
+  - `audio_file`: VARCHAR(255) NULL
+  - `audio_duration`: INT(11) NULL
 
 ## 浏览器兼容性
 
-- Chrome/Edge: 完全支持
-- Firefox: 完全支持
-- Safari: 部分支持（可能需要额外配置）
-- 移动浏览器: 需要HTTPS环境才能使用录音功能
+| 浏览器 | 支持情况 |
+|--------|---------|
+| Chrome/Edge | 完全支持 |
+| Firefox | 完全支持 |
+| Safari | 部分支持（可能需要额外配置） |
+| 移动浏览器 | 需要HTTPS环境才能使用录音功能 |
 
 ## 注意事项
 
@@ -85,6 +94,7 @@ chmod 755 uploads/audio
 2. **文件大小**: 建议录音时长不超过60秒，文件大小控制在5MB以内
 3. **浏览器权限**: 首次使用需要用户授权麦克风权限
 4. **音频格式**: 默认使用WebM格式，这是浏览器原生支持的格式
+5. **存储空间**: 定期清理旧的语音文件，避免占用过多存储空间
 
 ## 故障排除
 
@@ -93,18 +103,21 @@ chmod 755 uploads/audio
 1. 检查浏览器是否支持 `MediaRecorder API`
 2. 确认已授权麦克风权限
 3. 检查是否为HTTPS环境（生产环境要求）
+4. 检查浏览器控制台是否有错误信息
 
 ### 音频无法播放
 
 1. 检查音频文件路径是否正确
 2. 确认 `uploads/audio/` 目录权限
 3. 检查浏览器是否支持音频格式
+4. 检查文件是否完整上传
 
 ### 上传失败
 
 1. 检查文件大小是否超过5MB限制
 2. 确认服务器 `uploads/audio/` 目录写入权限
 3. 检查PHP `upload_max_filesize` 和 `post_max_size` 配置
+4. 查看服务器错误日志
 
 ## API端点
 
@@ -121,7 +134,7 @@ Content-Type: multipart/form-data
 {
     "success": true,
     "audio_file": "uploads/audio/voice_1_1234567890_abc123.webm",
-    "audio_duration": 0
+    "audio_duration": 30
 }
 ```
 
@@ -153,8 +166,9 @@ Content-Type: application/json
 
 ## 更新日志
 
-- 2024-12-13: 初始版本发布
+- **2024-12-13**: 初始版本发布
   - 支持语音录制和播放
   - 支持文字和语音两种漂流瓶类型
   - 音频文件上传和管理
+  - 前端页面全面支持语音播放
 
