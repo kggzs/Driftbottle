@@ -1,6 +1,7 @@
 -- 漂流瓶系统数据库初始化脚本
--- 版本: v1.2.0 (包含语音漂流瓶功能和用户等级系统)
+-- 版本: v1.3.0 (包含语音漂流瓶功能、用户等级系统、评论回复功能)
 -- 更新日期: 2024-12-20
+-- 最后更新: 2024-12-20 (合并所有SQL更新，包括评论回复支持)
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -98,12 +99,18 @@ CREATE TABLE IF NOT EXISTS `bottles` (
 -- 创建评论表
 CREATE TABLE IF NOT EXISTS `comments` (
     `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
+    `parent_id` INT(11) DEFAULT NULL COMMENT '父评论ID，NULL表示一级评论',
+    `reply_to_user_id` INT(11) DEFAULT NULL COMMENT '回复的目标用户ID',
     `bottle_id` INT(11) NOT NULL,
     `user_id` INT(11) NOT NULL,
     `content` TEXT NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`parent_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`reply_to_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    INDEX `idx_parent_id` (`parent_id`),
+    INDEX `idx_reply_to_user_id` (`reply_to_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建点赞表

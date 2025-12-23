@@ -378,23 +378,45 @@ function pickRandomBottle($userId) {
         $bottle['like_count'] = $likeResult->fetch_assoc()['like_count'];
         $likeStmt->close();
         
-        // 获取评论
+        // 获取评论（包括回复）
         $commentStmt = $conn->prepare("
-            SELECT c.*, u.username, u.gender 
+            SELECT c.*, u.username, u.gender,
+                   ru.username as reply_to_username
             FROM comments c
             JOIN users u ON c.user_id = u.id
+            LEFT JOIN users ru ON c.reply_to_user_id = ru.id
             WHERE c.bottle_id = ? 
-            ORDER BY c.created_at
+            ORDER BY 
+                CASE WHEN c.parent_id IS NULL THEN c.id ELSE c.parent_id END,
+                c.created_at ASC
         ");
         $commentStmt->bind_param("i", $bottle['id']);
         $commentStmt->execute();
         $commentsResult = $commentStmt->get_result();
         
+        // 组织评论结构：一级评论和二级回复
         $comments = [];
+        $replies = [];
         while ($comment = $commentsResult->fetch_assoc()) {
-            $comments[] = $comment;
+            if ($comment['parent_id'] === null) {
+                // 一级评论
+                $comment['replies'] = [];
+                $comments[$comment['id']] = $comment;
+            } else {
+                // 二级回复
+                $replies[] = $comment;
+            }
         }
-        $bottle['comments'] = $comments;
+        
+        // 将回复添加到对应的父评论
+        foreach ($replies as $reply) {
+            if (isset($comments[$reply['parent_id']])) {
+                $comments[$reply['parent_id']]['replies'][] = $reply;
+            }
+        }
+        
+        // 转换为数组（只保留一级评论，回复已嵌套在其中）
+        $bottle['comments'] = array_values($comments);
         $commentStmt->close();
         
         // 检查当前用户是否已点赞
@@ -421,21 +443,28 @@ function pickRandomBottle($userId) {
 }
 
 // 添加评论并再次扔出
-function commentAndThrowBottle($bottleId, $userId, $content) {
+function commentAndThrowBottle($bottleId, $userId, $content, $parentId = null, $replyToUserId = null, $throwBack = true) {
     $conn = getDbConnection();
     
-    // 先添加评论
-    $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content) VALUES (?, ?, ?)");
-    $stmt->bind_param("iis", $bottleId, $userId, $content);
+    // 先添加评论（支持回复）
+    if ($parentId) {
+        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content, parent_id, reply_to_user_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisii", $bottleId, $userId, $content, $parentId, $replyToUserId);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content) VALUES (?, ?, ?)");
+        $stmt->bind_param("iis", $bottleId, $userId, $content);
+    }
     
     if ($stmt->execute()) {
         $commentId = $conn->insert_id;
         
-        // 更新漂流瓶状态为漂流中
-        $updateStmt = $conn->prepare("UPDATE bottles SET status = '漂流中' WHERE id = ?");
-        $updateStmt->bind_param("i", $bottleId);
-        $updateStmt->execute();
-        $updateStmt->close();
+        // 如果选择丢回大海，更新漂流瓶状态为漂流中
+        if ($throwBack) {
+            $updateStmt = $conn->prepare("UPDATE bottles SET status = '漂流中' WHERE id = ?");
+            $updateStmt->bind_param("i", $bottleId);
+            $updateStmt->execute();
+            $updateStmt->close();
+        }
         
         // 获取漂流瓶所有者信息，用于发送消息
         $bottleStmt = $conn->prepare("SELECT user_id FROM bottles WHERE id = ?");
@@ -446,19 +475,22 @@ function commentAndThrowBottle($bottleId, $userId, $content) {
         if ($bottleResult->num_rows === 1) {
             $bottleOwnerId = $bottleResult->fetch_assoc()['user_id'];
             
-            // 创建消息（如果评论者不是瓶子的所有者）
-            if ($bottleOwnerId != $userId) {
+            // 如果是回复评论，通知被回复的用户；否则通知瓶子所有者
+            $notifyUserId = $replyToUserId ? $replyToUserId : $bottleOwnerId;
+            
+            // 创建消息（如果评论者不是通知目标用户）
+            if ($notifyUserId != $userId) {
                 $msgStmt = $conn->prepare("
                     INSERT INTO messages (user_id, bottle_id, from_user_id, comment_id, type, content) 
                     VALUES (?, ?, ?, ?, '评论', ?)
                 ");
-                $msgStmt->bind_param("iiiis", $bottleOwnerId, $bottleId, $userId, $commentId, $content);
+                $msgStmt->bind_param("iiiis", $notifyUserId, $bottleId, $userId, $commentId, $content);
                 $msgStmt->execute();
                 $msgStmt->close();
                 
-                // 给瓶子所有者增加积分，使用与点赞相同的积分值
+                // 给通知目标用户增加积分，使用与点赞相同的积分值
                 $pointsToAdd = POINTS_PER_LIKE;
-                updateUserPoints($bottleOwnerId, $pointsToAdd, '收到漂流瓶评论');
+                updateUserPoints($notifyUserId, $pointsToAdd, $parentId ? '收到评论回复' : '收到漂流瓶评论');
             }
         }
         $bottleStmt->close();
@@ -588,6 +620,47 @@ function getUserBottles($userId) {
     
     $bottles = [];
     while ($bottle = $result->fetch_assoc()) {
+        // 获取该漂流瓶的评论（包括回复）
+        $commentStmt = $conn->prepare("
+            SELECT c.*, u.username, u.gender,
+                   ru.username as reply_to_username
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            LEFT JOIN users ru ON c.reply_to_user_id = ru.id
+            WHERE c.bottle_id = ? 
+            ORDER BY 
+                CASE WHEN c.parent_id IS NULL THEN c.id ELSE c.parent_id END,
+                c.created_at ASC
+        ");
+        $commentStmt->bind_param("i", $bottle['id']);
+        $commentStmt->execute();
+        $commentsResult = $commentStmt->get_result();
+        
+        // 组织评论结构：一级评论和二级回复
+        $comments = [];
+        $replies = [];
+        while ($comment = $commentsResult->fetch_assoc()) {
+            if ($comment['parent_id'] === null) {
+                // 一级评论
+                $comment['replies'] = [];
+                $comments[$comment['id']] = $comment;
+            } else {
+                // 二级回复
+                $replies[] = $comment;
+            }
+        }
+        
+        // 将回复添加到对应的父评论
+        foreach ($replies as $reply) {
+            if (isset($comments[$reply['parent_id']])) {
+                $comments[$reply['parent_id']]['replies'][] = $reply;
+            }
+        }
+        
+        // 转换为数组（只保留一级评论，回复已嵌套在其中）
+        $bottle['comments'] = array_values($comments);
+        $commentStmt->close();
+        
         $bottles[] = $bottle;
     }
     
@@ -622,23 +695,45 @@ function getUserPickedBottles($userId) {
             $bottle['username'] = '匿名用户';
         }
         
-        // 获取该漂流瓶的评论
+        // 获取该漂流瓶的评论（包括回复）
         $commentStmt = $conn->prepare("
-            SELECT c.*, u.username, u.gender 
+            SELECT c.*, u.username, u.gender,
+                   ru.username as reply_to_username
             FROM comments c
             JOIN users u ON c.user_id = u.id
+            LEFT JOIN users ru ON c.reply_to_user_id = ru.id
             WHERE c.bottle_id = ? 
-            ORDER BY c.created_at ASC
+            ORDER BY 
+                CASE WHEN c.parent_id IS NULL THEN c.id ELSE c.parent_id END,
+                c.created_at ASC
         ");
         $commentStmt->bind_param("i", $bottle['id']);
         $commentStmt->execute();
         $commentsResult = $commentStmt->get_result();
         
+        // 组织评论结构：一级评论和二级回复
         $comments = [];
+        $replies = [];
         while ($comment = $commentsResult->fetch_assoc()) {
-            $comments[] = $comment;
+            if ($comment['parent_id'] === null) {
+                // 一级评论
+                $comment['replies'] = [];
+                $comments[$comment['id']] = $comment;
+            } else {
+                // 二级回复
+                $replies[] = $comment;
+            }
         }
-        $bottle['comments'] = $comments;
+        
+        // 将回复添加到对应的父评论
+        foreach ($replies as $reply) {
+            if (isset($comments[$reply['parent_id']])) {
+                $comments[$reply['parent_id']]['replies'][] = $reply;
+            }
+        }
+        
+        // 转换为数组（只保留一级评论，回复已嵌套在其中）
+        $bottle['comments'] = array_values($comments);
         $commentStmt->close();
         
         $bottles[] = $bottle;

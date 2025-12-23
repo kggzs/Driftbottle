@@ -48,6 +48,50 @@
 
 ## 版本升级指南
 
+### 升级到 v1.3.0
+
+**发布日期**: 2024-12-20
+
+#### 新增功能
+- 评论回复功能（二级评论）
+- 评论功能增强（仅评论/评论并丢回大海）
+- 消息中心功能增强（点击标记已读）
+
+#### 数据库更新
+1. **更新 comments 表结构**
+   ```sql
+   -- 如果使用完整的 driftbottle.sql，这些更新已包含在内
+   -- 如果从旧版本升级，执行以下 SQL：
+   
+   ALTER TABLE `comments` 
+   ADD COLUMN `parent_id` INT(11) DEFAULT NULL COMMENT '父评论ID，NULL表示一级评论' AFTER `id`,
+   ADD COLUMN `reply_to_user_id` INT(11) DEFAULT NULL COMMENT '回复的目标用户ID' AFTER `parent_id`,
+   ADD INDEX `idx_parent_id` (`parent_id`),
+   ADD INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
+   ADD FOREIGN KEY (`parent_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE,
+   ADD FOREIGN KEY (`reply_to_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL;
+   ```
+
+2. **或者直接导入完整数据库结构**
+   ```bash
+   mysql -u driftbottle_user -p driftbottle < driftbottle.sql
+   ```
+
+#### 升级步骤
+1. 备份数据库和文件
+2. 下载 v1.3.0 版本代码
+3. 执行数据库更新（使用 driftbottle.sql 或单独的更新脚本）
+4. 清除浏览器缓存
+5. 测试评论回复功能
+
+#### 注意事项
+- 现有的一级评论不受影响，`parent_id` 和 `reply_to_user_id` 字段为 NULL
+- 删除父评论时，所有子回复也会被自动删除（CASCADE）
+- 评论后可以选择"仅评论"或"评论并丢回大海"
+- 所有漂流瓶都会显示在"我捡到的漂流瓶"中，不再需要"显示全部漂流瓶"按钮
+
+### 升级到 v1.2.0
+
 ### 升级到 v1.2.0（用户等级系统）
 
 **新增功能：**

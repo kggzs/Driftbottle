@@ -202,11 +202,8 @@
                 <div class="col-md-10 offset-md-1">
                     <!-- 我捡到的漂流瓶部分 -->
                     <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h3>我捡到的漂流瓶</h3>
-                            <button id="clearCommentedBottles" class="btn btn-outline-secondary btn-sm" title="重新显示所有漂流瓶，包括已评论过的">
-                                <i class="fas fa-sync-alt"></i> 显示全部漂流瓶
-                            </button>
                         </div>
                         <div class="card-body">
                             <div class="picked-bottles-container">
@@ -248,6 +245,7 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="commentBottleId">
+                    <input type="hidden" id="commentAction" value="throw_back">
                     <div class="mb-3">
                         <label for="commentContent" class="form-label">评论内容</label>
                         <textarea class="form-control" id="commentContent" rows="3" placeholder="写下你的评论..."></textarea>
@@ -267,7 +265,7 @@
         const ITEMS_PER_PAGE = 10; // 每页显示10条
         let allBottles = [];
         let currentPage = 1;
-        let showAllBottles = false; // 是否显示所有漂流瓶（包括已评论的）
+        // 不再需要过滤已评论的漂流瓶，所有漂流瓶都显示
         
         // 格式化时长显示函数
         const formatDuration = (seconds) => {
@@ -284,6 +282,58 @@
             div.textContent = text;
             return div.innerHTML;
         };
+        
+        // 渲染评论（包括回复）
+        function renderComment(comment, bottleId, canReply = true) {
+            const commentTime = new Date(comment.created_at).toLocaleString();
+            const escapedUsername = escapeHtml(comment.username || '未知用户');
+            const commentUsernameDisplay = comment.user_id ? 
+                `<a href="user_profile.html?id=${comment.user_id}" class="text-primary">${escapedUsername}</a>` : 
+                `<span class="text-primary">${escapedUsername}</span>`;
+            
+            // 转义评论内容，但保留换行
+            const escapedContent = escapeHtml(comment.content || '').replace(/\n/g, '<br>');
+            
+            // 渲染回复
+            let repliesHtml = '';
+            if (comment.replies && comment.replies.length > 0) {
+                repliesHtml = '<div class="replies-list ms-4 mt-2" style="border-left: 2px solid #dee2e6; padding-left: 1rem;">';
+                comment.replies.forEach(reply => {
+                    repliesHtml += renderComment(reply, bottleId, canReply);
+                });
+                repliesHtml += '</div>';
+            }
+            
+            // 回复按钮
+            let replyBtnHtml = '';
+            if (canReply) {
+                replyBtnHtml = `
+                    <button class="btn btn-sm btn-link p-0 mt-1 reply-btn" 
+                            data-comment-id="${comment.id}" 
+                            data-bottle-id="${bottleId}"
+                            data-reply-to-user-id="${comment.user_id}"
+                            data-reply-to-username="${escapedUsername}"
+                            style="font-size: 0.85rem; color: #0d6efd; text-decoration: none;">
+                        <i class="fas fa-reply"></i> 回复
+                    </button>
+                `;
+            }
+            
+            return `
+                <div class="comment-item p-2 mb-2 border-bottom" style="background-color: #f8f9fa; border-radius: 4px;" data-comment-id="${comment.id}">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div style="font-weight: 500; font-size: 0.9rem;">
+                            ${commentUsernameDisplay}
+                            ${comment.reply_to_username ? `<span class="text-muted" style="font-size: 0.85rem;"> 回复 <span class="text-primary">${escapeHtml(comment.reply_to_username)}</span></span>` : ''}
+                        </div>
+                        <small class="text-muted" style="font-size: 0.8rem;">${commentTime}</small>
+                    </div>
+                    <p class="mb-0" style="font-size: 0.9rem; color: #495057; white-space: pre-wrap;">${escapedContent}</p>
+                    ${replyBtnHtml}
+                    ${repliesHtml}
+                </div>
+            `;
+        }
         
         // 显示分页
         function renderPagination(totalPages, pageNum) {
@@ -400,24 +450,9 @@
             }
             const container = document.querySelector('.picked-bottles-container');
             
-            // 过滤已评论的漂流瓶
-            let filteredBottles = allBottles;
-            if (!showAllBottles) {
-                let commentedBottleIds = [];
-                try {
-                    const storedIds = localStorage.getItem('commentedBottleIds');
-                    if (storedIds) {
-                        commentedBottleIds = JSON.parse(storedIds);
-                    }
-                } catch (e) {
-                    Logger.error("解析本地存储的已评论漂流瓶ID失败:", e);
-                    commentedBottleIds = [];
-                }
-                filteredBottles = allBottles.filter(bottle => !commentedBottleIds.includes(String(bottle.id)));
-            }
-            
+            // 不再过滤已评论的漂流瓶，显示所有捡到的漂流瓶
             // 排序漂流瓶，最近捡到的在前
-            filteredBottles = filteredBottles.sort((a, b) => new Date(b.pick_time) - new Date(a.pick_time));
+            const filteredBottles = allBottles.sort((a, b) => new Date(b.pick_time) - new Date(a.pick_time));
             
             const totalPages = Math.max(1, Math.ceil(filteredBottles.length / ITEMS_PER_PAGE));
             // 确保 currentPage 不会超出范围
@@ -446,7 +481,7 @@
             if (pageBottles.length === 0) {
                 container.innerHTML = `
                     <div class="text-center">
-                        <p>${showAllBottles ? '你还没有捡到过漂流瓶，去<a href="pick.html">捡一个</a>吧！' : '你没有未评论的漂流瓶，去<a href="pick.html">捡一个</a>吧！'}</p>
+                        <p>你还没有捡到过漂流瓶，去<a href="pick.html">捡一个</a>吧！</p>
                     </div>
                 `;
                 renderPagination(0, 1);
@@ -500,27 +535,7 @@
                     `;
                     
                     bottle.comments.forEach(comment => {
-                        const commentTime = new Date(comment.created_at).toLocaleString();
-                        const escapedUsername = escapeHtml(comment.username || '未知用户');
-                        // 评论总是显示用户名，如果有user_id则添加链接
-                        const commentUsernameDisplay = comment.user_id ? 
-                            `<a href="user_profile.html?id=${comment.user_id}" class="text-primary">${escapedUsername}</a>` : 
-                            `<span class="text-primary">${escapedUsername}</span>`;
-                        
-                        // 转义评论内容，但保留换行
-                        const escapedContent = escapeHtml(comment.content || '').replace(/\n/g, '<br>');
-                        
-                        commentsHtml += `
-                            <div class="comment-item p-2 mb-2 border-bottom" style="background-color: #f8f9fa; border-radius: 4px;">
-                                <div class="d-flex justify-content-between align-items-start mb-1">
-                                    <div style="font-weight: 500; font-size: 0.9rem;">
-                                        ${commentUsernameDisplay}
-                                    </div>
-                                    <small class="text-muted" style="font-size: 0.8rem;">${commentTime}</small>
-                                </div>
-                                <p class="mb-0" style="font-size: 0.9rem; color: #495057; white-space: pre-wrap;">${escapedContent}</p>
-                            </div>
-                        `;
+                        commentsHtml += renderComment(comment, bottle.id, true);
                     });
                     
                     commentsHtml += `
@@ -553,8 +568,11 @@
                             </span>
                         </div>
                         <div class="mt-3">
-                            <button class="btn btn-primary comment-btn w-100 py-2" data-bottle-id="${bottle.id}" style="font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            <button class="btn btn-primary comment-btn w-100 py-2 mb-2" data-bottle-id="${bottle.id}" style="font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                                 <i class="fas fa-paper-plane"></i> 评论并扔回大海
+                            </button>
+                            <button class="btn btn-outline-primary comment-only-btn w-100 py-2" data-bottle-id="${bottle.id}" style="font-size: 16px; font-weight: bold;">
+                                <i class="fas fa-comment"></i> 仅评论
                             </button>
                         </div>
                     </div>
@@ -562,7 +580,7 @@
                 
                 container.appendChild(bottleDiv);
                 
-                // 绑定评论按钮事件
+                // 绑定评论并丢回大海按钮事件
                 const commentBtn = bottleDiv.querySelector('.comment-btn');
                 if (commentBtn && !commentBtn.hasEventListener) {
                     commentBtn.hasEventListener = true;
@@ -570,8 +588,34 @@
                         event.preventDefault();
                         event.stopPropagation();
                         
-                        Logger.log("点击了评论按钮，漂流瓶ID:", bottle.id);
+                        Logger.log("点击了评论并丢回大海按钮，漂流瓶ID:", bottle.id);
                         document.getElementById('commentBottleId').value = bottle.id;
+                        document.getElementById('commentAction').value = 'throw_back';
+                        document.getElementById('commentModalLabel').textContent = '评论漂流瓶并扔回大海';
+                        document.getElementById('commentSubmitBtn').innerHTML = '评论并扔回';
+                        
+                        if (window.commentModalInstance) {
+                            window.commentModalInstance.show();
+                        } else {
+                            const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+                            modal.show();
+                        }
+                    });
+                }
+                
+                // 绑定仅评论按钮事件
+                const commentOnlyBtn = bottleDiv.querySelector('.comment-only-btn');
+                if (commentOnlyBtn && !commentOnlyBtn.hasEventListener) {
+                    commentOnlyBtn.hasEventListener = true;
+                    commentOnlyBtn.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        Logger.log("点击了仅评论按钮，漂流瓶ID:", bottle.id);
+                        document.getElementById('commentBottleId').value = bottle.id;
+                        document.getElementById('commentAction').value = 'comment_only';
+                        document.getElementById('commentModalLabel').textContent = '评论漂流瓶';
+                        document.getElementById('commentSubmitBtn').innerHTML = '仅评论';
                         
                         if (window.commentModalInstance) {
                             window.commentModalInstance.show();
@@ -593,6 +637,120 @@
             });
             
             renderPagination(totalPages, currentPage);
+            
+            // 绑定回复按钮事件
+            container.querySelectorAll('.reply-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const commentId = this.getAttribute('data-comment-id');
+                    const bottleId = this.getAttribute('data-bottle-id');
+                    const replyToUserId = this.getAttribute('data-reply-to-user-id');
+                    const replyToUsername = this.getAttribute('data-reply-to-username');
+                    
+                    showReplyModal(bottleId, commentId, replyToUserId, replyToUsername);
+                });
+            });
+        }
+        
+        // 显示回复模态框
+        function showReplyModal(bottleId, parentId, replyToUserId, replyToUsername) {
+            // 创建或获取回复模态框
+            let replyModal = document.getElementById('replyCommentModal');
+            if (!replyModal) {
+                replyModal = document.createElement('div');
+                replyModal.id = 'replyCommentModal';
+                replyModal.className = 'modal fade';
+                replyModal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">回复评论</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="replyBottleId">
+                                <input type="hidden" id="replyParentId">
+                                <input type="hidden" id="replyToUserId">
+                                <div class="mb-2">
+                                    <small class="text-muted">回复 <span id="replyToUsernameDisplay" class="text-primary"></span></small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="replyContent" class="form-label">回复内容</label>
+                                    <textarea class="form-control" id="replyContent" rows="3" placeholder="写下你的回复..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary" id="replySubmitBtn">发送回复</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(replyModal);
+                
+                // 绑定提交按钮事件
+                document.getElementById('replySubmitBtn').addEventListener('click', function() {
+                    const bottleId = document.getElementById('replyBottleId').value;
+                    const parentId = document.getElementById('replyParentId').value;
+                    const replyToUserId = document.getElementById('replyToUserId').value;
+                    const content = document.getElementById('replyContent').value.trim();
+                    
+                    if (!content) {
+                        showAlert('请输入回复内容', 'warning');
+                        return;
+                    }
+                    
+                    if (content.length > 200) {
+                        showAlert('回复内容不能超过200字', 'warning');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 提交中...';
+                    
+                    fetch('api.php?action=comment_bottle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            bottle_id: bottleId,
+                            content: content,
+                            parent_id: parentId,
+                            reply_to_user_id: replyToUserId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const modal = bootstrap.Modal.getInstance(replyModal);
+                            modal.hide();
+                            document.getElementById('replyContent').value = '';
+                            showAlert('回复成功', 'success');
+                            // 重新加载漂流瓶列表
+                            loadUserPickedBottles();
+                        } else {
+                            showAlert(data.message || '回复失败，请稍后再试', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        Logger.error('Error:', error);
+                        showAlert('回复失败，请稍后再试', 'danger');
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = '发送回复';
+                    });
+                });
+            }
+            
+            // 设置模态框内容
+            document.getElementById('replyBottleId').value = bottleId;
+            document.getElementById('replyParentId').value = parentId;
+            document.getElementById('replyToUserId').value = replyToUserId;
+            document.getElementById('replyToUsernameDisplay').textContent = replyToUsername;
+            document.getElementById('replyContent').value = '';
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(replyModal);
+            modal.show();
         }
         
         // 加载用户捡到的漂流瓶
@@ -723,35 +881,6 @@
                 
                 updateNavBarManually();
                 
-                // 绑定清除已评论漂流瓶按钮事件
-                const clearCommentedBottlesBtn = document.getElementById('clearCommentedBottles');
-                if (clearCommentedBottlesBtn) {
-                    clearCommentedBottlesBtn.addEventListener('click', function() {
-                        this.disabled = true;
-                        const originalText = this.innerHTML;
-                        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 处理中...';
-                        
-                        try {
-                            localStorage.removeItem('commentedBottleIds');
-                            Logger.log("已清除本地存储中的已评论漂流瓶ID列表");
-                            
-                            showAlert('已重置漂流瓶显示，即将重新加载所有漂流瓶', 'success');
-                            
-                            showAllBottles = false;
-                            setTimeout(() => {
-                                loadUserPickedBottles();
-                                this.disabled = false;
-                                this.innerHTML = originalText;
-                            }, 1000);
-                        } catch (e) {
-                            Logger.error("清除已评论漂流瓶ID失败:", e);
-                            showAlert('重置失败，请刷新页面后重试', 'danger');
-                            this.disabled = false;
-                            this.innerHTML = originalText;
-                        }
-                    });
-                }
-                
                 // 绑定评论提交按钮事件
                 const commentSubmitBtn = document.getElementById('commentSubmitBtn');
                 if (commentSubmitBtn && !commentSubmitBtn.hasEventListener) {
@@ -773,12 +902,14 @@
                         this.disabled = true;
                         this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 提交中...';
                         
+                        const action = document.getElementById('commentAction').value;
                         fetch('api.php?action=comment_bottle', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 bottle_id: bottleId,
-                                content: commentContent
+                                content: commentContent,
+                                throw_back: action === 'throw_back'
                             })
                         })
                         .then(response => response.json())
@@ -790,24 +921,11 @@
                                 
                                 document.getElementById('commentContent').value = '';
                                 
-                                // 保存已评论的漂流瓶ID到本地存储中
-                                try {
-                                    let commentedBottleIds = [];
-                                    const storedIds = localStorage.getItem('commentedBottleIds');
-                                    if (storedIds) {
-                                        commentedBottleIds = JSON.parse(storedIds);
-                                    }
-                                    
-                                    if (!commentedBottleIds.includes(bottleId)) {
-                                        commentedBottleIds.push(bottleId);
-                                        localStorage.setItem('commentedBottleIds', JSON.stringify(commentedBottleIds));
-                                        Logger.log("已将漂流瓶ID添加到已评论列表:", bottleId);
-                                    }
-                                } catch (e) {
-                                    Logger.error("保存已评论漂流瓶ID失败:", e);
+                                if (action === 'throw_back') {
+                                    showAlert('评论成功，漂流瓶已扔回大海', 'success');
+                                } else {
+                                    showAlert('评论成功', 'success');
                                 }
-                                
-                                showAlert('评论成功，漂流瓶已扔回大海', 'success');
                                 
                                 // 重新加载漂流瓶列表
                                 loadUserPickedBottles();
@@ -821,7 +939,8 @@
                         })
                         .finally(() => {
                             this.disabled = false;
-                            this.innerHTML = '评论并扔回';
+                            const action = document.getElementById('commentAction').value;
+                            this.innerHTML = action === 'throw_back' ? '评论并扔回' : '仅评论';
                         });
                     });
                 }

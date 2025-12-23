@@ -18,21 +18,49 @@
         .alert-container {
             z-index: 9999;
             pointer-events: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 500px;
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
         }
         
         .alert-container .alert {
             pointer-events: auto;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            max-width: 500px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 100%;
             width: 100%;
             margin-bottom: 10px;
+            border-radius: 8px;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         @media (max-width: 576px) {
+            .alert-container {
+                top: 10px;
+                padding: 0 0.75rem;
+            }
+            
             .alert-container .alert {
-                max-width: 90%;
-                width: 90%;
                 font-size: 14px;
+                padding: 0.75rem;
             }
         }
         
@@ -89,6 +117,95 @@
             background-color: #f8f9fa;
             border-bottom: 1px solid rgba(0, 0, 0, 0.125);
             font-weight: 600;
+        }
+        
+        .message-item {
+            transition: all 0.2s ease;
+        }
+        
+        .message-item:hover {
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .message-item[data-is-read="0"]:hover {
+            background-color: #e7f3ff;
+        }
+        
+        .message-item {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 1px solid #90caf9;
+        }
+        
+        .message-item[data-is-read="1"] {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            border: 1px solid #bdbdbd;
+        }
+        
+        .unread-badge {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #2196f3 0%, #64b5f6 100%) !important;
+            border: none;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+            animation: pulse 2s infinite;
+            display: inline-block;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+        
+        .message-item[data-is-read="0"] {
+            position: relative;
+        }
+        
+        .message-item[data-is-read="0"]::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #2196f3 0%, #64b5f6 100%);
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .message-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .message-content .message-info {
+            flex: 1;
+        }
+        
+        .message-content .message-info h6 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .message-content .message-info p {
+            font-size: 0.95rem;
+            color: #424242;
+            margin-bottom: 0.25rem;
+        }
+        
+        .message-content .message-info small {
+            font-size: 0.85rem;
         }
         
         @media (max-width: 768px) {
@@ -268,7 +385,11 @@
                     <!-- 消息中心 -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h3>我的消息 <span class="badge bg-danger" id="unreadBadge">0</span></h3>
+                            <h3 class="mb-1">
+                                我的消息 
+                                <span class="badge bg-primary" id="unreadBadge" style="font-size: 1rem; padding: 0.3rem 0.6rem; display: inline-block; border-radius: 4px;">0</span>
+                            </h3>
+                            <small class="text-muted">点击未读消息可标记为已读</small>
                         </div>
                         <div class="card-body">
                             <div class="messages-container">
@@ -316,17 +437,22 @@
                             if (!message.is_read) unreadCount++;
                             const messageTime = new Date(message.created_at).toLocaleString();
                             const messageClass = message.is_read ? '' : 'border-start border-primary border-3';
+                            const cursorStyle = !message.is_read ? 'cursor: pointer;' : '';
                             
                             messagesHtml += `
-                                <div class="card mb-2 ${messageClass}">
+                                <div class="card mb-2 ${messageClass} message-item" 
+                                     data-message-id="${message.id}" 
+                                     data-is-read="${message.is_read ? '1' : '0'}"
+                                     style="${cursorStyle}"
+                                     ${!message.is_read ? 'title="点击标记为已读"' : ''}>
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <h6 class="mb-1">来自: ${message.from_username || '未知用户'}</h6>
-                                                <p class="mb-1">${message.bottle_content || '消息内容'}</p>
+                                        <div class="message-content">
+                                            <div class="message-info">
+                                                <h6>来自: ${message.from_username || '未知用户'}</h6>
+                                                <p>${message.bottle_content || '消息内容'}</p>
                                                 <small class="text-muted">${messageTime}</small>
                                             </div>
-                                            ${!message.is_read ? '<span class="badge bg-primary">未读</span>' : ''}
+                                            ${!message.is_read ? '<span class="badge unread-badge">未读</span>' : ''}
                                         </div>
                                     </div>
                                 </div>
@@ -334,12 +460,36 @@
                         });
                         
                         messagesList.innerHTML = messagesHtml;
-                        if (unreadBadge) unreadBadge.textContent = unreadCount;
+                        if (unreadBadge) {
+                            unreadBadge.textContent = unreadCount;
+                            // 如果没有未读消息，隐藏徽章
+                            if (unreadCount === 0) {
+                                unreadBadge.style.display = 'none';
+                            } else {
+                                unreadBadge.style.display = 'inline-block';
+                            }
+                        }
                         if (noMessages) noMessages.classList.add('d-none');
+                        
+                        // 绑定消息点击事件（标记为已读）
+                        messagesList.querySelectorAll('.message-item[data-is-read="0"]').forEach(messageCard => {
+                            messageCard.addEventListener('click', function() {
+                                const messageId = this.getAttribute('data-message-id');
+                                if (!messageId) return;
+                                
+                                // 如果已经标记为已读，不再处理
+                                if (this.getAttribute('data-is-read') === '1') return;
+                                
+                                markMessageAsRead(messageId, this);
+                            });
+                        });
                     } else {
                         messagesList.innerHTML = '';
                         if (noMessages) noMessages.classList.remove('d-none');
-                        if (unreadBadge) unreadBadge.textContent = '0';
+                        if (unreadBadge) {
+                            unreadBadge.textContent = '0';
+                            unreadBadge.style.display = 'none';
+                        }
                     }
                 })
                 .catch(error => {
@@ -349,6 +499,57 @@
                         loadingMessages.innerHTML = '<p class="text-danger">加载消息失败，请稍后再试</p>';
                     }
                 });
+        }
+        
+        // 标记消息为已读
+        function markMessageAsRead(messageId, messageElement) {
+            fetch('api.php?action=mark_message_read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_id: messageId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新消息元素状态
+                    messageElement.setAttribute('data-is-read', '1');
+                    messageElement.classList.remove('border-start', 'border-primary', 'border-3');
+                    messageElement.style.cursor = '';
+                    messageElement.removeAttribute('title');
+                    
+                    // 移除未读标记
+                    const unreadBadge = messageElement.querySelector('.unread-badge');
+                    if (unreadBadge) {
+                        unreadBadge.remove();
+                    }
+                    
+                    // 更新未读消息数量
+                    const unreadBadgeHeader = document.getElementById('unreadBadge');
+                    if (unreadBadgeHeader) {
+                        const currentCount = parseInt(unreadBadgeHeader.textContent) || 0;
+                        const newCount = Math.max(0, currentCount - 1);
+                        unreadBadgeHeader.textContent = newCount;
+                        
+                        // 如果没有未读消息了，隐藏徽章
+                        if (newCount === 0) {
+                            unreadBadgeHeader.style.display = 'none';
+                        } else {
+                            unreadBadgeHeader.style.display = 'inline-block';
+                        }
+                    }
+                    
+                    if (typeof Logger !== 'undefined' && Logger.log) {
+                        Logger.log('消息已标记为已读:', messageId);
+                    }
+                } else {
+                    if (typeof Logger !== 'undefined' && Logger.error) {
+                        Logger.error('标记消息已读失败:', data.message);
+                    }
+                }
+            })
+            .catch(error => {
+                Logger.error('标记消息已读失败:', error);
+            });
         }
         
         // 页面初始化
@@ -966,7 +1167,7 @@
             if (!alertContainer) {
                 alertContainer = document.createElement('div');
                 alertContainer.id = 'alertContainer';
-                alertContainer.className = 'alert-container position-fixed top-0 start-0 end-0 p-3 d-flex flex-column align-items-center';
+                alertContainer.className = 'alert-container';
                 document.body.appendChild(alertContainer);
             }
             
@@ -974,20 +1175,32 @@
             const alertElement = document.createElement('div');
             alertElement.id = alertId;
             alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+            
+            // 根据类型选择图标
+            let icon = 'fa-info-circle';
+            if (type === 'success') icon = 'fa-check-circle';
+            else if (type === 'danger') icon = 'fa-exclamation-circle';
+            else if (type === 'warning') icon = 'fa-exclamation-triangle';
+            
             alertElement.innerHTML = `
-                ${message}
+                <div class="d-flex align-items-center">
+                    <i class="fas ${icon} me-2"></i>
+                    <span>${message}</span>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
             
             alertContainer.prepend(alertElement);
             
+            // 自动关闭（成功消息3秒，其他5秒）
+            const autoCloseTime = type === 'success' ? 3000 : 5000;
             setTimeout(() => {
                 const alert = document.getElementById(alertId);
                 if (alert) {
                     const bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 }
-            }, 5000);
+            }, autoCloseTime);
         }
         
         document.addEventListener('DOMContentLoaded', function() {

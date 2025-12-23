@@ -344,8 +344,11 @@ switch ($endpoint) {
             } else {
                 $bottleId = $validation['data']['bottle_id'];
                 $content = $validation['data']['content'];
+                $parentId = isset($data['parent_id']) && $data['parent_id'] ? (int)$data['parent_id'] : null;
+                $replyToUserId = isset($data['reply_to_user_id']) && $data['reply_to_user_id'] ? (int)$data['reply_to_user_id'] : null;
+                $throwBack = isset($data['throw_back']) ? (bool)$data['throw_back'] : true; // 默认为true，保持向后兼容
                 
-                $response = commentAndThrowBottle($bottleId, getCurrentUserId(), $content);
+                $response = commentAndThrowBottle($bottleId, getCurrentUserId(), $content, $parentId, $replyToUserId, $throwBack);
             }
         } else {
             $response = ['success' => false, 'message' => '请求方法不支持'];
