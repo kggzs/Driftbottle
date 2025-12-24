@@ -7,159 +7,130 @@ require_once 'includes/header.php';
 // 初始化数据库连接
 $conn = getDbConnection();
 
-// 获取基本统计数据
-// 1. 用户总数
+// 优化：使用单个查询获取所有基本统计数据（减少8次查询为1次）
 try {
-    $userQuery = "SELECT COUNT(*) as total FROM users";
-    $userResult = $conn->query($userQuery);
-    if ($userResult === false) {
-        throw new Exception("查询用户总数失败: " . $conn->error);
+    $statsQuery = "
+        SELECT 
+            (SELECT COUNT(*) FROM users) as user_total,
+            (SELECT COUNT(*) FROM bottles) as bottle_total,
+            (SELECT COUNT(*) FROM bottles WHERE status = '漂流中') as active_bottle_total,
+            (SELECT COUNT(*) FROM comments) as comment_total,
+            (SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURDATE()) as today_user_total,
+            (SELECT COUNT(*) FROM bottles WHERE DATE(throw_time) = CURDATE()) as today_bottle_total,
+            (SELECT COUNT(*) FROM comments WHERE DATE(created_at) = CURDATE()) as today_comment_total,
+            (SELECT COUNT(*) FROM users WHERE is_vip = 1) as vip_user_total
+    ";
+    $statsResult = $conn->query($statsQuery);
+    if ($statsResult === false) {
+        throw new Exception("查询统计数据失败: " . $conn->error);
     }
-    $userTotal = $userResult->fetch_assoc()['total'] ?? 0;
+    $stats = $statsResult->fetch_assoc();
+    
+    $userTotal = (int)($stats['user_total'] ?? 0);
+    $bottleTotal = (int)($stats['bottle_total'] ?? 0);
+    $activeBottleTotal = (int)($stats['active_bottle_total'] ?? 0);
+    $commentTotal = (int)($stats['comment_total'] ?? 0);
+    $todayUserTotal = (int)($stats['today_user_total'] ?? 0);
+    $todayBottleTotal = (int)($stats['today_bottle_total'] ?? 0);
+    $todayCommentTotal = (int)($stats['today_comment_total'] ?? 0);
+    $vipUserTotal = (int)($stats['vip_user_total'] ?? 0);
 } catch (Exception $e) {
-    error_log("统计用户总数错误: " . $e->getMessage());
-    $userTotal = 0;
+    error_log("统计查询错误: " . $e->getMessage());
+    // 设置默认值
+    $userTotal = $bottleTotal = $activeBottleTotal = $commentTotal = 0;
+    $todayUserTotal = $todayBottleTotal = $todayCommentTotal = $vipUserTotal = 0;
 }
 
-// 2. 漂流瓶总数
-try {
-    $bottleQuery = "SELECT COUNT(*) as total FROM bottles";
-    $bottleResult = $conn->query($bottleQuery);
-    if ($bottleResult === false) {
-        throw new Exception("查询漂流瓶总数失败: " . $conn->error);
-    }
-    $bottleTotal = $bottleResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计漂流瓶总数错误: " . $e->getMessage());
-    $bottleTotal = 0;
-}
-
-// 3. 漂流中的瓶子数量
-try {
-    $activeBottleQuery = "SELECT COUNT(*) as total FROM bottles WHERE status = '漂流中'";
-    $activeBottleResult = $conn->query($activeBottleQuery);
-    if ($activeBottleResult === false) {
-        throw new Exception("查询漂流中瓶子数量失败: " . $conn->error);
-    }
-    $activeBottleTotal = $activeBottleResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计漂流中瓶子数量错误: " . $e->getMessage());
-    $activeBottleTotal = 0;
-}
-
-// 4. 评论总数
-try {
-    $commentQuery = "SELECT COUNT(*) as total FROM comments";
-    $commentResult = $conn->query($commentQuery);
-    if ($commentResult === false) {
-        throw new Exception("查询评论总数失败: " . $conn->error);
-    }
-    $commentTotal = $commentResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计评论总数错误: " . $e->getMessage());
-    $commentTotal = 0;
-}
-
-// 5. 今日新增用户
-try {
-    $todayUserQuery = "SELECT COUNT(*) as total FROM users WHERE DATE(created_at) = CURDATE()";
-    $todayUserResult = $conn->query($todayUserQuery);
-    if ($todayUserResult === false) {
-        throw new Exception("查询今日新增用户失败: " . $conn->error);
-    }
-    $todayUserTotal = $todayUserResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计今日新增用户错误: " . $e->getMessage());
-    $todayUserTotal = 0;
-}
-
-// 6. 今日新增漂流瓶
-try {
-    $todayBottleQuery = "SELECT COUNT(*) as total FROM bottles WHERE DATE(throw_time) = CURDATE()";
-    $todayBottleResult = $conn->query($todayBottleQuery);
-    if ($todayBottleResult === false) {
-        throw new Exception("查询今日新增漂流瓶失败: " . $conn->error);
-    }
-    $todayBottleTotal = $todayBottleResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计今日新增漂流瓶错误: " . $e->getMessage());
-    $todayBottleTotal = 0;
-}
-
-// 7. 今日评论数
-try {
-    $todayCommentQuery = "SELECT COUNT(*) as total FROM comments WHERE DATE(created_at) = CURDATE()";
-    $todayCommentResult = $conn->query($todayCommentQuery);
-    if ($todayCommentResult === false) {
-        throw new Exception("查询今日评论数失败: " . $conn->error);
-    }
-    $todayCommentTotal = $todayCommentResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计今日评论数错误: " . $e->getMessage());
-    $todayCommentTotal = 0;
-}
-
-// 8. VIP用户数量
-try {
-    $vipUserQuery = "SELECT COUNT(*) as total FROM users WHERE is_vip = 1";
-    $vipUserResult = $conn->query($vipUserQuery);
-    if ($vipUserResult === false) {
-        throw new Exception("查询VIP用户数量失败: " . $conn->error);
-    }
-    $vipUserTotal = $vipUserResult->fetch_assoc()['total'] ?? 0;
-} catch (Exception $e) {
-    error_log("统计VIP用户数量错误: " . $e->getMessage());
-    $vipUserTotal = 0;
-}
-
-// 获取最近7天的数据趋势
+// 优化：获取最近7天的数据趋势（减少21次查询为3次）
 $dateLabels = [];
 $userTrends = [];
 $bottleTrends = [];
 $commentTrends = [];
 
+// 生成日期标签
 for ($i = 6; $i >= 0; $i--) {
-    $date = date('Y-m-d', strtotime("-$i days"));
     $dateLabels[] = date('m-d', strtotime("-$i days"));
-    
-    // 用户注册趋势
-    try {
-        $userTrendQuery = "SELECT COUNT(*) as total FROM users WHERE DATE(created_at) = '$date'";
-        $userTrendResult = $conn->query($userTrendQuery);
-        if ($userTrendResult === false) {
-            throw new Exception("查询用户趋势失败: " . $conn->error);
+}
+
+// 批量查询用户注册趋势（7天数据一次查询）
+try {
+    $userTrendQuery = "
+        SELECT DATE(created_at) as date, COUNT(*) as total 
+        FROM users 
+        WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+    ";
+    $userTrendResult = $conn->query($userTrendQuery);
+    $userTrendData = [];
+    if ($userTrendResult !== false) {
+        while ($row = $userTrendResult->fetch_assoc()) {
+            $userTrendData[$row['date']] = (int)$row['total'];
         }
-        $userTrends[] = $userTrendResult->fetch_assoc()['total'] ?? 0;
-    } catch (Exception $e) {
-        error_log("统计用户趋势错误: " . $e->getMessage());
-        $userTrends[] = 0;
     }
     
-    // 漂流瓶趋势
-    try {
-        $bottleTrendQuery = "SELECT COUNT(*) as total FROM bottles WHERE DATE(throw_time) = '$date'";
-        $bottleTrendResult = $conn->query($bottleTrendQuery);
-        if ($bottleTrendResult === false) {
-            throw new Exception("查询漂流瓶趋势失败: " . $conn->error);
+    // 填充7天数据，缺失的日期为0
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $userTrends[] = $userTrendData[$date] ?? 0;
+    }
+} catch (Exception $e) {
+    error_log("统计用户趋势错误: " . $e->getMessage());
+    $userTrends = array_fill(0, 7, 0);
+}
+
+// 批量查询漂流瓶趋势（7天数据一次查询）
+try {
+    $bottleTrendQuery = "
+        SELECT DATE(throw_time) as date, COUNT(*) as total 
+        FROM bottles 
+        WHERE DATE(throw_time) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(throw_time)
+        ORDER BY date ASC
+    ";
+    $bottleTrendResult = $conn->query($bottleTrendQuery);
+    $bottleTrendData = [];
+    if ($bottleTrendResult !== false) {
+        while ($row = $bottleTrendResult->fetch_assoc()) {
+            $bottleTrendData[$row['date']] = (int)$row['total'];
         }
-        $bottleTrends[] = $bottleTrendResult->fetch_assoc()['total'] ?? 0;
-    } catch (Exception $e) {
-        error_log("统计漂流瓶趋势错误: " . $e->getMessage());
-        $bottleTrends[] = 0;
     }
     
-    // 评论趋势
-    try {
-        $commentTrendQuery = "SELECT COUNT(*) as total FROM comments WHERE DATE(created_at) = '$date'";
-        $commentTrendResult = $conn->query($commentTrendQuery);
-        if ($commentTrendResult === false) {
-            throw new Exception("查询评论趋势失败: " . $conn->error);
-        }
-        $commentTrends[] = $commentTrendResult->fetch_assoc()['total'] ?? 0;
-    } catch (Exception $e) {
-        error_log("统计评论趋势错误: " . $e->getMessage());
-        $commentTrends[] = 0;
+    // 填充7天数据，缺失的日期为0
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $bottleTrends[] = $bottleTrendData[$date] ?? 0;
     }
+} catch (Exception $e) {
+    error_log("统计漂流瓶趋势错误: " . $e->getMessage());
+    $bottleTrends = array_fill(0, 7, 0);
+}
+
+// 批量查询评论趋势（7天数据一次查询）
+try {
+    $commentTrendQuery = "
+        SELECT DATE(created_at) as date, COUNT(*) as total 
+        FROM comments 
+        WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+    ";
+    $commentTrendResult = $conn->query($commentTrendQuery);
+    $commentTrendData = [];
+    if ($commentTrendResult !== false) {
+        while ($row = $commentTrendResult->fetch_assoc()) {
+            $commentTrendData[$row['date']] = (int)$row['total'];
+        }
+    }
+    
+    // 填充7天数据，缺失的日期为0
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $commentTrends[] = $commentTrendData[$date] ?? 0;
+    }
+} catch (Exception $e) {
+    error_log("统计评论趋势错误: " . $e->getMessage());
+    $commentTrends = array_fill(0, 7, 0);
 }
 
 // 获取最新10个漂流瓶

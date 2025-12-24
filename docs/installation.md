@@ -67,8 +67,9 @@ chmod -R 777 /path/to/web/driftbottle/logs
 ### 5. IP 地址定位配置
 
 - 项目使用高德地图 IP 定位 API 进行 IP 地址归属地查询
-- API Key 已配置在 `includes/config.php` 中的 `AMAP_API_KEY` 常量，无需额外配置
-- 如需更换 API Key，请修改 `includes/config.php` 中的 `AMAP_API_KEY` 常量值
+- API Key 已包含在数据库初始化脚本中，首次安装无需额外配置
+- 如需更换 API Key，可在后台管理系统 → 系统设置 → 基本设置中修改"高德地图API Key"
+- 获取 API Key 请访问：[高德开放平台](https://console.amap.com/dev/key/app)
 
 ### 6. 访问测试
 
@@ -99,7 +100,9 @@ mysql -u driftbottle_user -p driftbottle < sql/update_script_name.sql
 | `add_description_field.sql` | 添加用户个性签名字段 |
 | `add_comment_reply_support.sql` | 添加评论回复支持（parent_id、reply_to_user_id字段） |
 
-**注意**: v1.3.0 版本已包含IP追踪功能（`users.register_ip`、`users.last_login_ip`、`comments.ip_address`），这些字段已合并到主数据库文件 `driftbottle.sql` 中，无需单独执行 `add_user_ip_tracking.sql` 脚本。
+**注意**: 
+- v1.3.0 版本已包含IP追踪功能（`users.register_ip`、`users.last_login_ip`、`comments.ip_address`），这些字段已合并到主数据库文件 `driftbottle.sql` 中，无需单独执行 `add_user_ip_tracking.sql` 脚本。
+- v1.3.1 版本已包含数据库索引优化和高德地图API Key配置，所有优化已合并到主数据库文件 `driftbottle.sql` 中，无需单独执行 `add_amap_api_key.sql` 脚本。
 
 ## 常见问题
 
@@ -126,7 +129,7 @@ mysql -u driftbottle_user -p driftbottle < sql/update_script_name.sql
 ### IP 地址归属地显示不正确
 
 - 项目使用高德地图 IP 定位 API，需要确保服务器能够访问外网
-- 检查 `includes/config.php` 中的 `AMAP_API_KEY` 常量是否配置正确且有效
+- 检查后台管理系统 → 系统设置 → 基本设置中的"高德地图API Key"是否配置正确且有效
 - 查看 PHP 错误日志确认是否有网络请求失败的错误
 
 ### API 调用失败或无响应

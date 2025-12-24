@@ -20,11 +20,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     try {
         $conn = getDbConnection();
         
+        // 开始事务，批量更新时使用事务提升性能
+        $conn->begin_transaction();
+        
+        // 准备批量更新的SQL语句
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        
+        $updateCount = 0;
+        
         // 基本设置
         if (isset($_POST['basic'])) {
             foreach ($_POST['basic'] as $key => $value) {
                 $safeValue = sanitizeInput($value);
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
         
@@ -32,7 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['points'])) {
             foreach ($_POST['points'] as $key => $value) {
                 $safeValue = (int)$value; // 确保积分值为整数
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
         
@@ -40,7 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['limits'])) {
             foreach ($_POST['limits'] as $key => $value) {
                 $safeValue = (int)$value; // 确保限制值为整数
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
         
@@ -48,7 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['content'])) {
             foreach ($_POST['content'] as $key => $value) {
                 $safeValue = (int)$value; // 确保限制值为整数
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
         
@@ -56,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['vip'])) {
             foreach ($_POST['vip'] as $key => $value) {
                 $safeValue = (int)$value; // 确保积分值为整数
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
         
@@ -64,9 +82,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['experience'])) {
             foreach ($_POST['experience'] as $key => $value) {
                 $safeValue = (int)$value; // 确保经验值为整数
-                updateSetting($key, $safeValue);
+                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
+                $stmt->execute();
+                $updateCount++;
             }
         }
+        
+        // 提交事务
+        $conn->commit();
+        $stmt->close();
+        $conn->close();
+        
+        // 清除设置缓存，强制下次重新加载
+        clearSettingsCache();
         
         $message = '设置已成功保存！';
         $messageType = 'success';
@@ -76,6 +104,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         exit;
         
     } catch (Exception $e) {
+        // 发生错误时回滚事务
+        if (isset($conn) && $conn instanceof mysqli) {
+            $conn->rollback();
+            if (isset($stmt)) {
+                $stmt->close();
+            }
+            $conn->close();
+        }
         $message = '保存设置时出错：' . $e->getMessage();
         $messageType = 'danger';
     }
@@ -152,7 +188,20 @@ try {
                             <?php foreach ($settings['basic'] as $setting): ?>
                             <div class="col-md-6 mb-3">
                                 <label for="<?php echo $setting['setting_key']; ?>" class="form-label"><?php echo $setting['setting_name']; ?></label>
+                                <?php if ($setting['setting_key'] === 'AMAP_API_KEY'): ?>
+                                <!-- 高德API Key使用密码输入框，带显示/隐藏功能 -->
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="<?php echo $setting['setting_key']; ?>" name="basic[<?php echo $setting['setting_key']; ?>]" value="<?php echo htmlspecialchars($setting['setting_value']); ?>" placeholder="请输入高德地图API Key">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('<?php echo $setting['setting_key']; ?>')">
+                                        <i class="bi bi-eye" id="<?php echo $setting['setting_key']; ?>_icon"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> 高德地图API Key用于IP地址定位功能，请妥善保管。获取API Key请访问：<a href="https://console.amap.com/dev/key/app" target="_blank">高德开放平台</a>
+                                </small>
+                                <?php else: ?>
                                 <input type="text" class="form-control" id="<?php echo $setting['setting_key']; ?>" name="basic[<?php echo $setting['setting_key']; ?>]" value="<?php echo htmlspecialchars($setting['setting_value']); ?>">
+                                <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -287,6 +336,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// 切换密码输入框的显示/隐藏
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(inputId + '_icon');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
 </script>
 
 <?php

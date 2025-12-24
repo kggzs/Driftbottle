@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-%3E%3D7.3-8892BF.svg?logo=php)](https://www.php.net/)
 [![MySQL Version](https://img.shields.io/badge/MySQL-%3E%3D5.6-4479A1.svg?logo=mysql)](https://www.mysql.com/)
-[![Version](https://img.shields.io/badge/Version-1.3.0-blue.svg)](https://github.com/kggzs/Driftbottle)
+[![Version](https://img.shields.io/badge/Version-1.3.1-blue.svg)](https://github.com/kggzs/Driftbottle)
 [![Status](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/kggzs/Driftbottle)
 
 [🚀 快速开始](#-安装与部署) • [📖 文档](docs/) • [🐛 问题反馈](https://github.com/kggzs/Driftbottle/issues) • [💬 讨论](https://github.com/kggzs/Driftbottle/discussions)
@@ -191,7 +191,8 @@
 
 5.  **IP 地址定位配置**
     - 项目使用高德地图 IP 定位 API 进行 IP 地址归属地查询。
-    - API Key 在配置 `includes/config.php` 中的 `AMAP_API_KEY` 常量中，进行修改配置。
+    - API Key 可在后台管理系统 → 系统设置 → 基本设置中配置。
+    - 首次安装时，API Key 已包含在数据库初始化脚本中，无需额外配置。
 
 6.  **访问测试**
     - 打开浏览器访问您的网站地址。
@@ -241,7 +242,7 @@
 
 5.  **IP 地址归属地显示不正确？**
     - 项目使用高德地图 IP 定位 API，需要确保服务器能够访问外网。
-    - 检查 `includes/config.php` 中的 `AMAP_API_KEY` 常量是否配置正确且有效。
+    - 检查后台管理系统 → 系统设置 → 基本设置中的"高德地图API Key"是否配置正确且有效。
     - 查看 PHP 错误日志确认是否有网络请求失败的错误。
 
 6.  **API 调用失败或无响应？**

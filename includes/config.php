@@ -26,9 +26,6 @@ define('DB_USER', 'root');
 define('DB_PASS', '6f80338a894a');
 define('DB_NAME', 'driftbottle');
 
-// 高德地图API Key
-define('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee'); //填写高德地图key
-
 // 安全配置
 define('SESSION_LIFETIME', 86400); // 会话有效期（秒）
 define('MAX_LOGIN_ATTEMPTS', 5); // 最大登录尝试次数
@@ -58,41 +55,74 @@ function getDbConnection() {
     }
 }
 
-// 从数据库获取设置
-function getSetting($key, $default = '') {
+// 批量加载所有设置到缓存（使用静态变量缓存，优化数据库查询性能）
+function loadAllSettings($forceReload = false) {
+    static $settingsCache = null;
+    
+    // 如果强制重新加载，清除缓存
+    if ($forceReload) {
+        $settingsCache = null;
+    }
+    
+    // 如果缓存已加载，直接返回
+    if ($settingsCache !== null) {
+        return $settingsCache;
+    }
+    
+    $settingsCache = [];
+    
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
-        $stmt->bind_param("s", $key);
+        // 一次性查询所有设置，避免多次查询
+        $stmt = $conn->prepare("SELECT setting_key, setting_value FROM system_settings");
         $stmt->execute();
         $result = $stmt->get_result();
         
-        if ($row = $result->fetch_assoc()) {
-            $value = $row['setting_value'];
-            $stmt->close();
-            $conn->close();
-            return $value;
+        while ($row = $result->fetch_assoc()) {
+            $settingsCache[$row['setting_key']] = $row['setting_value'];
         }
         
         $stmt->close();
         $conn->close();
-        return $default;
     } catch (Exception $e) {
-        error_log("获取设置异常: " . $e->getMessage());
-        // 发生异常时返回默认设置
-        return $default;
+        error_log("加载设置缓存异常: " . $e->getMessage());
+        // 发生异常时返回空数组，后续会使用默认值
+        $settingsCache = [];
     }
+    
+    return $settingsCache;
+}
+
+// 清除设置缓存（在更新设置后调用，强制下次重新加载）
+function clearSettingsCache() {
+    loadAllSettings(true); // 传入true强制重新加载
+}
+
+// 从数据库获取设置（使用缓存优化）
+function getSetting($key, $default = '') {
+    $settings = loadAllSettings();
+    
+    // 从缓存中获取，如果不存在则返回默认值
+    return isset($settings[$key]) ? $settings[$key] : $default;
 }
 
 // 更新设置
 function updateSetting($key, $value) {
     try {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-        $stmt->bind_param("ss", $value, $key);
+        
+        // 使用 INSERT ... ON DUPLICATE KEY UPDATE 确保设置存在
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->bind_param("sss", $key, $value, $value);
         $result = $stmt->execute();
         $stmt->close();
         $conn->close();
+        
+        // 更新成功后清除缓存
+        if ($result) {
+            clearSettingsCache();
+        }
+        
         return $result;
     } catch (Exception $e) {
         error_log("更新设置异常: " . $e->getMessage());
@@ -105,6 +135,9 @@ function updateSetting($key, $value) {
 define('SITE_NAME', getSetting('SITE_NAME', '漂流瓶'));
 define('SITE_URL', getSetting('SITE_URL', 'http://localhost'));
 define('ADMIN_EMAIL', getSetting('ADMIN_EMAIL', 'admin@example.com'));
+
+// 高德地图API Key - 从数据库读取
+define('AMAP_API_KEY', getSetting('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee')); // 从数据库读取，如果不存在则使用默认值
 
 // 功能限制配置
 define('MAX_BOTTLE_LENGTH', (int)getSetting('MAX_BOTTLE_LENGTH', 500));

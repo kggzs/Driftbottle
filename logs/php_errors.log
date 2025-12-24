@@ -7,3 +7,33 @@
 [24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 244
 [24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 248
 [24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 312
+[24-Dec-2025 18:40:51 PRC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on boolean in E:\www\Driftbottle\includes\user.php:97
+Stack trace:
+#0 E:\www\Driftbottle\api.php(159): loginUser('1724464998', '1724464998')
+#1 {main}
+  thrown in E:\www\Driftbottle\includes\user.php on line 97
+[24-Dec-2025 18:41:59 PRC] 记录登录日志失败: 执行记录登录日志查询失败: Cannot add or update a child row: a foreign key constraint fails (`driftbottle`.`admin_login_logs`, CONSTRAINT `admin_login_logs_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE)
+[24-Dec-2025 19:02:44 PRC] IP地理位置查询错误: 高德IP定位服务返回错误: INVALID_USER_IP
+[24-Dec-2025 19:02:54 PRC] IP地理位置查询错误: 高德IP定位服务返回错误: INVALID_USER_IP
+[24-Dec-2025 19:03:03 PRC] ------- 签到请求开始 -------
+[24-Dec-2025 19:03:03 PRC] 用户ID: 4
+[24-Dec-2025 19:03:03 PRC] 请求时间: 2025-12-24 19:03:03
+[24-Dec-2025 19:03:03 PRC] 客户端IP: 127.0.0.1
+[24-Dec-2025 19:03:03 PRC] 用户代理: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0
+[24-Dec-2025 19:03:03 PRC] 调用userCheckin函数...
+[24-Dec-2025 19:03:03 PRC] 开始执行userCheckin函数，用户ID: 4
+[24-Dec-2025 19:03:03 PRC] 准备开始事务处理
+[24-Dec-2025 19:03:03 PRC] 事务开始成功
+[24-Dec-2025 19:03:03 PRC] 检查用户是否今日已签到
+[24-Dec-2025 19:03:03 PRC] 获取昨天的签到记录
+[24-Dec-2025 19:03:03 PRC] 检查用户VIP状态
+[24-Dec-2025 19:03:03 PRC] 插入今天的签到记录
+[24-Dec-2025 19:03:03 PRC] 签到记录插入成功，开始更新用户积分
+[24-Dec-2025 19:03:03 PRC] 记录积分历史
+[24-Dec-2025 19:03:03 PRC] 会话中的积分已更新: 10
+[24-Dec-2025 19:03:03 PRC] 所有操作完成，准备提交事务
+[24-Dec-2025 19:03:03 PRC] 事务提交成功
+[24-Dec-2025 19:03:03 PRC] 签到成功，返回结果
+[24-Dec-2025 19:03:03 PRC] userCheckin函数调用完成，结果: 成功
+[24-Dec-2025 19:03:03 PRC] 响应内容: {"success":true,"consecutive_days":1,"points_earned":10,"is_weekly_bonus":false,"is_vip":false,"vip_bonus_points":0}
+[24-Dec-2025 19:03:03 PRC] ------- 签到请求结束 -------

@@ -15,8 +15,8 @@ function getLocationByIp($ip) {
     }
     
     // 确保config.php已加载
-    if (!defined('AMAP_API_KEY')) {
-        error_log('高德地图API Key未配置，请在includes/config.php中设置AMAP_API_KEY');
+    if (!defined('AMAP_API_KEY') || empty(AMAP_API_KEY)) {
+        error_log('高德地图API Key未配置，请在后台系统设置中配置AMAP_API_KEY');
         return '未知位置';
     }
     

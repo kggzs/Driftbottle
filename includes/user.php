@@ -582,11 +582,22 @@ function setUserExperience($userId, $experience) {
     }
 }
 
-// 获取用户信息
+// 获取用户信息（优化：合并多个查询为单个查询）
 function getUserInfo($userId) {
     $conn = getDbConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, gender, signature, points, experience, level, is_vip, vip_level, vip_expire_date, created_at FROM users WHERE id = ?");
+    // 优化：使用单个查询获取用户信息和统计数据
+    $stmt = $conn->prepare("
+        SELECT 
+            u.id, u.username, u.gender, u.signature, u.points, u.experience, u.level, 
+            u.is_vip, u.vip_level, u.vip_expire_date, u.created_at,
+            (SELECT COUNT(*) FROM bottles WHERE user_id = u.id) as bottle_count,
+            (SELECT COUNT(*) FROM likes l 
+             INNER JOIN bottles b ON l.bottle_id = b.id 
+             WHERE b.user_id = u.id) as like_count
+        FROM users u
+        WHERE u.id = ?
+    ");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -610,22 +621,6 @@ function getUserInfo($userId) {
             }
         }
         
-        // 获取用户扔出的漂流瓶数量
-        $stmt = $conn->prepare("SELECT COUNT(*) as bottle_count FROM bottles WHERE user_id = ?");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $bottleResult = $stmt->get_result();
-        $bottleCount = $bottleResult->fetch_assoc()['bottle_count'];
-        $user['bottle_count'] = $bottleCount;
-        
-        // 获取用户收到的点赞数
-        $stmt = $conn->prepare("SELECT COUNT(*) as like_count FROM likes WHERE bottle_id IN (SELECT id FROM bottles WHERE user_id = ?)");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $likeResult = $stmt->get_result();
-        $likeCount = $likeResult->fetch_assoc()['like_count'];
-        $user['like_count'] = $likeCount;
-        
         // 获取用户签到信息
         $user['checkin_status'] = getUserCheckinStatus($userId);
         
@@ -635,7 +630,6 @@ function getUserInfo($userId) {
         $user['exp_progress'] = $user['next_level_exp'] > 0 ? 
             (($user['experience'] - $user['current_level_exp']) / ($user['next_level_exp'] - $user['current_level_exp']) * 100) : 0;
         
-        $stmt->close();
         $conn->close();
         return ['success' => true, 'user' => $user];
     }

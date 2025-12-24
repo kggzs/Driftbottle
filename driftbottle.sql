@@ -1,7 +1,7 @@
 -- 漂流瓶系统数据库初始化脚本
--- 版本: v1.3.0 (包含语音漂流瓶功能、用户等级系统、评论回复功能、IP追踪功能)
+-- 版本: v1.3.1 (包含数据库索引优化、高德API Key配置)
 -- 更新日期: 2024-12-20
--- 最后更新: 2024-12-20 (合并所有SQL更新，包括评论回复支持和IP追踪功能)
+-- 最后更新: 2024-12-20 (添加数据库索引优化，合并高德API Key配置)
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -25,7 +25,11 @@ CREATE TABLE IF NOT EXISTS `users` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `register_ip` VARCHAR(50) DEFAULT NULL COMMENT '注册IP地址',
     `last_login_ip` VARCHAR(50) DEFAULT NULL COMMENT '上次登录IP地址',
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_is_vip` (`is_vip`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_vip_expire_date` (`vip_expire_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建管理员表
@@ -41,7 +45,10 @@ CREATE TABLE IF NOT EXISTS `admins` (
     `last_login_time` TIMESTAMP NULL,
     `last_login_ip` VARCHAR(50) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_status` (`status`),
+    INDEX `idx_role_id` (`role_id`),
+    INDEX `idx_last_login_time` (`last_login_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建角色表
@@ -63,7 +70,10 @@ CREATE TABLE IF NOT EXISTS `admin_login_logs` (
     `user_agent` VARCHAR(255) DEFAULT NULL,
     `status` TINYINT(1) DEFAULT 1 COMMENT '0:失败 1:成功',
     `description` TEXT DEFAULT NULL,
-    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE CASCADE,
+    INDEX `idx_admin_id` (`admin_id`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建管理员操作日志表
@@ -76,7 +86,10 @@ CREATE TABLE IF NOT EXISTS `admin_operation_logs` (
     `description` TEXT DEFAULT NULL,
     `data` TEXT DEFAULT NULL COMMENT 'JSON格式存储操作数据',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE CASCADE,
+    INDEX `idx_admin_id` (`admin_id`),
+    INDEX `idx_module` (`module`),
+    INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建漂流瓶表
@@ -95,7 +108,13 @@ CREATE TABLE IF NOT EXISTS `bottles` (
     `quality_score` INT(11) DEFAULT 0,
     `throw_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `status` ENUM('漂流中', '已捡起') DEFAULT '漂流中',
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_throw_time` (`throw_time`),
+    INDEX `idx_bottle_type` (`bottle_type`),
+    INDEX `idx_quality_score` (`quality_score`),
+    INDEX `idx_status_throw_time` (`status`, `throw_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建评论表
@@ -112,9 +131,13 @@ CREATE TABLE IF NOT EXISTS `comments` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`parent_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`reply_to_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    INDEX `idx_bottle_id` (`bottle_id`),
+    INDEX `idx_user_id` (`user_id`),
     INDEX `idx_parent_id` (`parent_id`),
     INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
-    INDEX `idx_ip_address` (`ip_address`)
+    INDEX `idx_ip_address` (`ip_address`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_bottle_created` (`bottle_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建点赞表
@@ -125,7 +148,9 @@ CREATE TABLE IF NOT EXISTS `likes` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY (`bottle_id`, `user_id`)
+    UNIQUE KEY (`bottle_id`, `user_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建捡瓶记录表
@@ -135,7 +160,11 @@ CREATE TABLE IF NOT EXISTS `pick_records` (
     `user_id` INT(11) NOT NULL,
     `pick_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_bottle_id` (`bottle_id`),
+    INDEX `idx_pick_time` (`pick_time`),
+    INDEX `idx_user_pick_time` (`user_id`, `pick_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建签到表
@@ -147,7 +176,9 @@ CREATE TABLE IF NOT EXISTS `checkins` (
     `points_earned` INT(11) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY (`user_id`, `checkin_date`)
+    UNIQUE KEY (`user_id`, `checkin_date`),
+    INDEX `idx_checkin_date` (`checkin_date`),
+    INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建积分历史表
@@ -157,7 +188,10 @@ CREATE TABLE IF NOT EXISTS `points_history` (
     `points` INT(11) NOT NULL,
     `action` VARCHAR(255) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_user_created` (`user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建经验值历史表
@@ -186,7 +220,11 @@ CREATE TABLE IF NOT EXISTS `messages` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`from_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`from_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_is_read` (`is_read`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_user_read_created` (`user_id`, `is_read`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建每日限制表
@@ -198,7 +236,8 @@ CREATE TABLE IF NOT EXISTS `daily_limits` (
     `pick_count` INT(11) DEFAULT 0,
     `free_throws_used` INT(11) DEFAULT 0,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY (`user_id`, `date`)
+    UNIQUE KEY (`user_id`, `date`),
+    INDEX `idx_date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建公告表
@@ -213,7 +252,12 @@ CREATE TABLE IF NOT EXISTS `announcements` (
     `created_by` INT(11) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    INDEX `idx_status` (`status`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_start_time` (`start_time`),
+    INDEX `idx_end_time` (`end_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建系统设置表
@@ -226,7 +270,8 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
     `setting_type` ENUM('text', 'number', 'textarea', 'switch', 'select') NOT NULL DEFAULT 'text',
     `options` TEXT DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_setting_group` (`setting_group`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入系统设置
@@ -235,6 +280,7 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_name`, `
 ('SITE_NAME', '漂流瓶', '网站名称', 'basic', 'text'),
 ('SITE_URL', 'http://localhost', '网站URL', 'basic', 'text'),
 ('ADMIN_EMAIL', 'admin@example.com', '管理员邮箱', 'basic', 'text'),
+('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee', '高德地图API Key', 'basic', 'text'),
 
 -- 积分规则设置
 ('POINTS_PER_CHECKIN', '10', '每日签到积分', 'points', 'number'),

@@ -605,10 +605,11 @@ function likeBottle($bottleId, $userId) {
     return ['success' => false, 'message' => '操作失败，请稍后再试'];
 }
 
-// 获取用户的漂流瓶历史
+// 获取用户的漂流瓶历史（优化：减少N+1查询问题）
 function getUserBottles($userId) {
     $conn = getDbConnection();
     
+    // 第一步：获取所有瓶子
     $stmt = $conn->prepare("
         SELECT b.*, 
                (SELECT COUNT(*) FROM likes WHERE bottle_id = b.id) as like_count,
@@ -622,55 +623,78 @@ function getUserBottles($userId) {
     $result = $stmt->get_result();
     
     $bottles = [];
+    $bottleIds = [];
     while ($bottle = $result->fetch_assoc()) {
-        // 获取该漂流瓶的评论（包括回复）
+        $bottles[$bottle['id']] = $bottle;
+        $bottleIds[] = $bottle['id'];
+    }
+    $stmt->close();
+    
+    // 第二步：批量获取所有评论（优化：一次查询获取所有评论，而不是N次）
+    if (!empty($bottleIds)) {
+        $placeholders = implode(',', array_fill(0, count($bottleIds), '?'));
         $commentStmt = $conn->prepare("
             SELECT c.*, u.username, u.gender,
-                   ru.username as reply_to_username
+                   ru.username as reply_to_username,
+                   c.bottle_id
             FROM comments c
             JOIN users u ON c.user_id = u.id
             LEFT JOIN users ru ON c.reply_to_user_id = ru.id
-            WHERE c.bottle_id = ? 
+            WHERE c.bottle_id IN ($placeholders)
             ORDER BY 
+                c.bottle_id,
                 CASE WHEN c.parent_id IS NULL THEN c.id ELSE c.parent_id END,
                 c.created_at ASC
         ");
-        $commentStmt->bind_param("i", $bottle['id']);
+        $commentStmt->bind_param(str_repeat('i', count($bottleIds)), ...$bottleIds);
         $commentStmt->execute();
         $commentsResult = $commentStmt->get_result();
         
-        // 组织评论结构：一级评论和二级回复
-        $comments = [];
-        $replies = [];
+        // 按瓶子ID组织评论
+        $allComments = [];
         while ($comment = $commentsResult->fetch_assoc()) {
-            if ($comment['parent_id'] === null) {
-                // 一级评论
-                $comment['replies'] = [];
-                $comments[$comment['id']] = $comment;
-            } else {
-                // 二级回复
-                $replies[] = $comment;
+            $bottleId = $comment['bottle_id'];
+            if (!isset($allComments[$bottleId])) {
+                $allComments[$bottleId] = [];
             }
+            $allComments[$bottleId][] = $comment;
         }
-        
-        // 将回复添加到对应的父评论
-        foreach ($replies as $reply) {
-            if (isset($comments[$reply['parent_id']])) {
-                $comments[$reply['parent_id']]['replies'][] = $reply;
-            }
-        }
-        
-        // 转换为数组（只保留一级评论，回复已嵌套在其中）
-        $bottle['comments'] = array_values($comments);
         $commentStmt->close();
         
-        $bottles[] = $bottle;
+        // 第三步：为每个瓶子组织评论结构
+        foreach ($bottles as $bottleId => &$bottle) {
+            $comments = [];
+            $replies = [];
+            
+            if (isset($allComments[$bottleId])) {
+                foreach ($allComments[$bottleId] as $comment) {
+                    if ($comment['parent_id'] === null) {
+                        // 一级评论
+                        $comment['replies'] = [];
+                        $comments[$comment['id']] = $comment;
+                    } else {
+                        // 二级回复
+                        $replies[] = $comment;
+                    }
+                }
+            }
+            
+            // 将回复添加到对应的父评论
+            foreach ($replies as $reply) {
+                if (isset($comments[$reply['parent_id']])) {
+                    $comments[$reply['parent_id']]['replies'][] = $reply;
+                }
+            }
+            
+            // 转换为数组（只保留一级评论，回复已嵌套在其中）
+            $bottle['comments'] = array_values($comments);
+        }
+        unset($bottle); // 解除引用
     }
     
-    $stmt->close();
     $conn->close();
     
-    return ['success' => true, 'bottles' => $bottles];
+    return ['success' => true, 'bottles' => array_values($bottles)];
 }
 
 // 获取用户捡过的漂流瓶
