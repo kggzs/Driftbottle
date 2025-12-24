@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-%3E%3D7.3-8892BF.svg?logo=php)](https://www.php.net/)
 [![MySQL Version](https://img.shields.io/badge/MySQL-%3E%3D5.6-4479A1.svg?logo=mysql)](https://www.mysql.com/)
-[![Version](https://img.shields.io/badge/Version-1.3.1-blue.svg)](https://github.com/kggzs/Driftbottle)
+[![Version](https://img.shields.io/badge/Version-1.4.0-blue.svg)](https://github.com/kggzs/Driftbottle)
 [![Status](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/kggzs/Driftbottle)
 
 [🚀 快速开始](#-安装与部署) • [📖 文档](docs/) • [🐛 问题反馈](https://github.com/kggzs/Driftbottle/issues) • [💬 讨论](https://github.com/kggzs/Driftbottle/discussions)
@@ -43,6 +43,7 @@
 - **📱 响应式设计** - 完美适配桌面端与移动端
 - **🎯 用户成长** - 经验值等级系统，让每一次互动都有意义
 - **💎 会员特权** - VIP 系统提供更多功能与权限
+- **🚨 内容审核** - 完善的举报系统，支持屏蔽、删除等操作，维护社区环境
 
 ---
 

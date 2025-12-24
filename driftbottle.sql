@@ -1,7 +1,7 @@
 -- 漂流瓶系统数据库初始化脚本
--- 版本: v1.3.1 (包含数据库索引优化、高德API Key配置)
--- 更新日期: 2024-12-20
--- 最后更新: 2024-12-20 (添加数据库索引优化，合并高德API Key配置)
+-- 版本: v1.4.0 (包含举报系统、软删除功能)
+-- 更新日期: 2024-12-24
+-- 最后更新: 2024-12-24 (添加举报系统、软删除功能、消息通知系统)
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -108,13 +108,17 @@ CREATE TABLE IF NOT EXISTS `bottles` (
     `quality_score` INT(11) DEFAULT 0,
     `throw_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `status` ENUM('漂流中', '已捡起') DEFAULT '漂流中',
+    `is_hidden` TINYINT(1) DEFAULT 0 COMMENT '是否屏蔽：0未屏蔽，1已屏蔽',
+    `is_deleted` TINYINT(1) DEFAULT 0 COMMENT '是否删除：0未删除，1已删除',
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_status` (`status`),
     INDEX `idx_throw_time` (`throw_time`),
     INDEX `idx_bottle_type` (`bottle_type`),
     INDEX `idx_quality_score` (`quality_score`),
-    INDEX `idx_status_throw_time` (`status`, `throw_time`)
+    INDEX `idx_status_throw_time` (`status`, `throw_time`),
+    INDEX `idx_is_hidden` (`is_hidden`),
+    INDEX `idx_is_deleted` (`is_deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建评论表
@@ -127,6 +131,8 @@ CREATE TABLE IF NOT EXISTS `comments` (
     `content` TEXT NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `ip_address` VARCHAR(50) DEFAULT NULL COMMENT '评论IP地址',
+    `is_hidden` TINYINT(1) DEFAULT 0 COMMENT '是否屏蔽：0未屏蔽，1已屏蔽',
+    `is_deleted` TINYINT(1) DEFAULT 0 COMMENT '是否删除：0未删除，1已删除',
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`parent_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE,
@@ -137,7 +143,9 @@ CREATE TABLE IF NOT EXISTS `comments` (
     INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
     INDEX `idx_ip_address` (`ip_address`),
     INDEX `idx_created_at` (`created_at`),
-    INDEX `idx_bottle_created` (`bottle_id`, `created_at`)
+    INDEX `idx_bottle_created` (`bottle_id`, `created_at`),
+    INDEX `idx_is_hidden` (`is_hidden`),
+    INDEX `idx_is_deleted` (`is_deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建点赞表
@@ -211,10 +219,10 @@ CREATE TABLE IF NOT EXISTS `messages` (
     `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT(11) NOT NULL,
     `bottle_id` INT(11) NOT NULL,
-    `from_user_id` INT(11) NOT NULL,
+    `from_user_id` INT(11) DEFAULT NULL COMMENT '发送消息的用户ID，NULL表示系统消息',
     `comment_id` INT(11) DEFAULT NULL,
     `like_id` INT(11) DEFAULT NULL,
-    `type` ENUM('评论', '点赞') NOT NULL,
+    `type` ENUM('评论', '点赞', '举报反馈') NOT NULL,
     `content` TEXT DEFAULT NULL,
     `is_read` TINYINT(1) DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -226,6 +234,30 @@ CREATE TABLE IF NOT EXISTS `messages` (
     INDEX `idx_created_at` (`created_at`),
     INDEX `idx_user_read_created` (`user_id`, `is_read`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建举报表
+CREATE TABLE IF NOT EXISTS `reports` (
+    `id` INT(11) AUTO_INCREMENT PRIMARY KEY,
+    `reporter_id` INT(11) NOT NULL COMMENT '举报人ID',
+    `target_type` ENUM('bottle', 'comment') NOT NULL COMMENT '举报类型：bottle漂流瓶，comment评论',
+    `target_id` INT(11) NOT NULL COMMENT '被举报内容ID（漂流瓶ID或评论ID）',
+    `reason` TEXT NOT NULL COMMENT '举报理由',
+    `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' COMMENT '审核状态：pending待审核，approved已通过，rejected已拒绝',
+    `admin_id` INT(11) DEFAULT NULL COMMENT '审核管理员ID',
+    `admin_action` VARCHAR(50) DEFAULT NULL COMMENT '管理员操作：delete删除，hide_bottle屏蔽漂流瓶，hide_comment屏蔽评论，no_action无操作',
+    `admin_note` TEXT DEFAULT NULL COMMENT '管理员备注',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间',
+    `reviewed_at` TIMESTAMP NULL COMMENT '审核时间',
+    FOREIGN KEY (`reporter_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE SET NULL,
+    INDEX `idx_reporter_id` (`reporter_id`),
+    INDEX `idx_target_type` (`target_type`),
+    INDEX `idx_target_id` (`target_id`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_admin_id` (`admin_id`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_status_created` (`status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
 
 -- 创建每日限制表
 CREATE TABLE IF NOT EXISTS `daily_limits` (
@@ -292,6 +324,7 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_name`, `
 ('POINTS_PER_VIP_CHECKIN', '20', 'VIP会员每次签到额外积分', 'points', 'number'),
 ('POINTS_PER_BOTTLE', '1', '扔漂流瓶消耗积分', 'points', 'number'),
 ('POINTS_PER_LIKE', '1', '收到点赞获得积分', 'points', 'number'),
+('POINTS_PER_REPORT_APPROVED', '5', '举报成功奖励积分', 'points', 'number'),
 
 -- 每日限制设置
 ('DAILY_BOTTLE_LIMIT', '10', '普通用户每日扔瓶限制', 'limits', 'number'),
