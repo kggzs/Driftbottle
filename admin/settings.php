@@ -16,25 +16,78 @@ if (!$admin->hasPermission('settings')) {
 $message = '';
 $messageType = '';
 
+// 辅助函数：获取设置的默认元数据
+function getSettingMetadata($key, $group) {
+    // 设置名称映射表
+    $nameMap = [
+        'SITE_NAME' => '网站名称',
+        'SITE_URL' => '网站URL',
+        'ADMIN_EMAIL' => '管理员邮箱',
+        'AMAP_API_KEY' => '高德地图API Key',
+        'ICP_LICENSE' => 'ICP备案号',
+        'POLICE_LICENSE' => '公安备案号',
+        'COPYRIGHT_INFO' => '版权信息',
+        'WEBMASTER_EMAIL' => '站长邮箱',
+        'POINTS_PER_CHECKIN' => '每日签到积分',
+        'POINTS_PER_WEEKLY_CHECKIN' => '连续签到7天额外奖励积分',
+        'POINTS_PER_VIP_CHECKIN' => 'VIP会员每次签到额外积分',
+        'POINTS_PER_BOTTLE' => '扔漂流瓶消耗积分',
+        'POINTS_PER_LIKE' => '收到点赞获得积分',
+        'DAILY_BOTTLE_LIMIT' => '普通用户每日扔瓶限制',
+        'DAILY_PICK_LIMIT' => '普通用户每日捡瓶限制',
+        'VIP_DAILY_BOTTLE_LIMIT' => 'VIP用户每日扔瓶限制',
+        'VIP_DAILY_PICK_LIMIT' => 'VIP用户每日捡瓶限制',
+        'MAX_BOTTLE_LENGTH' => '漂流瓶内容最大长度',
+        'MAX_COMMENT_LENGTH' => '评论最大长度',
+        'MAX_SIGNATURE_LENGTH' => '个性签名最大长度',
+        'VIP_POINTS_1_MONTH' => 'VIP会员1个月开通积分',
+        'VIP_POINTS_3_MONTHS' => 'VIP会员3个月开通积分',
+        'VIP_POINTS_6_MONTHS' => 'VIP会员6个月开通积分',
+        'VIP_POINTS_12_MONTHS' => 'VIP会员12个月开通积分',
+        'EXP_PER_BOTTLE' => '发漂流瓶获得经验值',
+        'EXP_PER_PICK' => '捡漂流瓶获得经验值',
+        'EXP_PER_COMMENT' => '评论获得经验值',
+    ];
+    
+    return isset($nameMap[$key]) ? $nameMap[$key] : $key;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
+    $conn = null;
+    $connectionClosed = false;
+    
     try {
         $conn = getDbConnection();
         
         // 开始事务，批量更新时使用事务提升性能
         $conn->begin_transaction();
         
-        // 准备批量更新的SQL语句
-        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-        
         $updateCount = 0;
+        $errors = [];
         
+        // 使用INSERT ... ON DUPLICATE KEY UPDATE，包含所有必需字段
         // 基本设置
         if (isset($_POST['basic'])) {
             foreach ($_POST['basic'] as $key => $value) {
                 $safeValue = sanitizeInput($value);
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'basic');
+                
+                // 使用INSERT ... ON DUPLICATE KEY UPDATE，包含所有必需字段
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'basic', 'text')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
         }
         
@@ -42,9 +95,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['points'])) {
             foreach ($_POST['points'] as $key => $value) {
                 $safeValue = (int)$value; // 确保积分值为整数
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'points');
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'points', 'number')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
         }
         
@@ -52,9 +119,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['limits'])) {
             foreach ($_POST['limits'] as $key => $value) {
                 $safeValue = (int)$value; // 确保限制值为整数
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'limits');
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'limits', 'number')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
         }
         
@@ -62,9 +143,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['content'])) {
             foreach ($_POST['content'] as $key => $value) {
                 $safeValue = (int)$value; // 确保限制值为整数
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'content');
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'content', 'number')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
         }
         
@@ -72,9 +167,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['vip'])) {
             foreach ($_POST['vip'] as $key => $value) {
                 $safeValue = (int)$value; // 确保积分值为整数
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'vip');
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'vip', 'number')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
         }
         
@@ -82,16 +191,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         if (isset($_POST['experience'])) {
             foreach ($_POST['experience'] as $key => $value) {
                 $safeValue = (int)$value; // 确保经验值为整数
-                $stmt->bind_param("sss", $key, $safeValue, $safeValue);
-                $stmt->execute();
-                $updateCount++;
+                $settingName = getSettingMetadata($key, 'experience');
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'experience', 'number')
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("ssss", $key, $safeValue, $settingName, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
             }
+        }
+        
+        // 检查是否有错误
+        if (!empty($errors)) {
+            try {
+                if ($conn && !$connectionClosed) {
+                    $conn->rollback();
+                    $conn->close();
+                    $connectionClosed = true;
+                }
+            } catch (Exception $e) {
+                error_log("回滚事务失败: " . $e->getMessage());
+            }
+            throw new Exception("保存设置时出现错误: " . implode("; ", $errors));
         }
         
         // 提交事务
         $conn->commit();
-        $stmt->close();
         $conn->close();
+        $connectionClosed = true;
         
         // 清除设置缓存，强制下次重新加载
         clearSettingsCache();
@@ -105,15 +242,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         
     } catch (Exception $e) {
         // 发生错误时回滚事务
-        if (isset($conn) && $conn instanceof mysqli) {
-            $conn->rollback();
-            if (isset($stmt)) {
-                $stmt->close();
+        if (isset($conn) && $conn instanceof mysqli && !$connectionClosed) {
+            try {
+                $conn->rollback();
+            } catch (Exception $rollbackError) {
+                // 忽略回滚错误，记录日志即可
+                error_log("回滚事务失败: " . $rollbackError->getMessage());
             }
-            $conn->close();
+            try {
+                $conn->close();
+                $connectionClosed = true;
+            } catch (Exception $closeError) {
+                // 忽略关闭错误，记录日志即可
+                error_log("关闭连接失败: " . $closeError->getMessage());
+            }
         }
         $message = '保存设置时出错：' . $e->getMessage();
         $messageType = 'danger';
+        error_log("保存设置异常: " . $e->getMessage());
     }
 }
 

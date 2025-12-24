@@ -261,9 +261,51 @@ async function loadSiteSettings() {
                 // 更新网站名称
                 updateSiteName(window.siteSettings.SITE_NAME);
             }
+            
+            // 更新页脚信息
+            updateFooterInfo(window.siteSettings);
         }
     } catch (error) {
         console.error('加载网站设置失败:', error);
+    }
+}
+
+// 更新页脚信息
+function updateFooterInfo(settings) {
+    const footer = document.querySelector('footer');
+    if (!footer) return;
+    
+    const container = footer.querySelector('.container') || footer;
+    let footerHtml = '';
+    
+    // 版权信息
+    if (settings.COPYRIGHT_INFO) {
+        footerHtml += `<p class="mb-2">${settings.COPYRIGHT_INFO}</p>`;
+    } else {
+        const currentYear = new Date().getFullYear();
+        const siteName = settings.SITE_NAME || '漂流瓶';
+        footerHtml += `<p class="mb-2">© ${currentYear} ${siteName} 版权所有</p>`;
+    }
+    
+    // 备案号和公安备案号
+    const licenseInfo = [];
+    if (settings.ICP_LICENSE) {
+        licenseInfo.push(`<a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow" class="text-light text-decoration-none">${settings.ICP_LICENSE}</a>`);
+    }
+    if (settings.POLICE_LICENSE) {
+        licenseInfo.push(`<a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=${settings.POLICE_LICENSE.match(/\d+/)?.[0] || ''}" target="_blank" rel="nofollow" class="text-light text-decoration-none">${settings.POLICE_LICENSE}</a>`);
+    }
+    if (licenseInfo.length > 0) {
+        footerHtml += `<p class="mb-2">${licenseInfo.join(' | ')}</p>`;
+    }
+    
+    // 站长邮箱
+    if (settings.WEBMASTER_EMAIL) {
+        footerHtml += `<p class="mb-0"><small>站长邮箱: <a href="mailto:${settings.WEBMASTER_EMAIL}" class="text-light text-decoration-none">${settings.WEBMASTER_EMAIL}</a></small></p>`;
+    }
+    
+    if (footerHtml) {
+        container.innerHTML = footerHtml;
     }
 }
 

@@ -281,6 +281,10 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_name`, `
 ('SITE_URL', 'http://localhost', '网站URL', 'basic', 'text'),
 ('ADMIN_EMAIL', 'admin@example.com', '管理员邮箱', 'basic', 'text'),
 ('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee', '高德地图API Key', 'basic', 'text'),
+('ICP_LICENSE', '', 'ICP备案号', 'basic', 'text'),
+('POLICE_LICENSE', '', '公安备案号', 'basic', 'text'),
+('COPYRIGHT_INFO', '© 2023 漂流瓶 版权所有', '版权信息', 'basic', 'text'),
+('WEBMASTER_EMAIL', 'admin@example.com', '站长邮箱', 'basic', 'text'),
 
 -- 积分规则设置
 ('POINTS_PER_CHECKIN', '10', '每日签到积分', 'points', 'number'),

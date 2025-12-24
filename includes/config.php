@@ -139,6 +139,12 @@ define('ADMIN_EMAIL', getSetting('ADMIN_EMAIL', 'admin@example.com'));
 // 高德地图API Key - 从数据库读取
 define('AMAP_API_KEY', getSetting('AMAP_API_KEY', '9ae69cf1b2e4fd09bc1df0c394962dee')); // 从数据库读取，如果不存在则使用默认值
 
+// 网站备案和版权信息
+define('ICP_LICENSE', getSetting('ICP_LICENSE', ''));
+define('POLICE_LICENSE', getSetting('POLICE_LICENSE', ''));
+define('COPYRIGHT_INFO', getSetting('COPYRIGHT_INFO', '© 2023 漂流瓶 版权所有'));
+define('WEBMASTER_EMAIL', getSetting('WEBMASTER_EMAIL', 'admin@example.com'));
+
 // 功能限制配置
 define('MAX_BOTTLE_LENGTH', (int)getSetting('MAX_BOTTLE_LENGTH', 500));
 define('MAX_COMMENT_LENGTH', (int)getSetting('MAX_COMMENT_LENGTH', 200));

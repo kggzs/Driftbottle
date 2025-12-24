@@ -928,7 +928,11 @@ switch ($endpoint) {
             'success' => true,
             'settings' => [
                 'SITE_NAME' => SITE_NAME,
-                'SITE_URL' => SITE_URL
+                'SITE_URL' => SITE_URL,
+                'ICP_LICENSE' => ICP_LICENSE,
+                'POLICE_LICENSE' => POLICE_LICENSE,
+                'COPYRIGHT_INFO' => COPYRIGHT_INFO,
+                'WEBMASTER_EMAIL' => WEBMASTER_EMAIL
             ]
         ];
         break;
