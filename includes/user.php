@@ -20,9 +20,12 @@ function registerUser($username, $password, $gender) {
     // 加密密码
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
+    // 获取注册IP地址
+    $registerIp = getClientIpAddress();
+    
     // 插入新用户
-    $stmt = $conn->prepare("INSERT INTO users (username, password, gender) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $username, $hashedPassword, $gender);
+    $stmt = $conn->prepare("INSERT INTO users (username, password, gender, register_ip) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $username, $hashedPassword, $gender, $registerIp);
     
     if ($stmt->execute()) {
         $userId = $conn->insert_id;
@@ -86,6 +89,14 @@ function loginUser($username, $password) {
             $_SESSION['is_vip'] = $user['is_vip'];
             $_SESSION['vip_level'] = $user['vip_level'];
             $_SESSION['status'] = $user['status'];
+            
+            // 更新最后登录IP
+            require_once __DIR__ . '/bottle.php'; // 引入getClientIpAddress函数
+            $loginIp = getClientIpAddress();
+            $updateIpStmt = $conn->prepare("UPDATE users SET last_login_ip = ? WHERE id = ?");
+            $updateIpStmt->bind_param("si", $loginIp, $user['id']);
+            $updateIpStmt->execute();
+            $updateIpStmt->close();
             
             $stmt->close();
             $conn->close();

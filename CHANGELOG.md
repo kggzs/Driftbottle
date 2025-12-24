@@ -4,6 +4,17 @@
 
 ### 新增功能
 
+- **IP地址追踪功能**
+  - 用户注册时自动记录注册IP地址
+  - 用户登录时自动更新上次登录IP地址
+  - 发布漂流瓶时自动记录IP地址（已有功能）
+  - 发表评论时自动记录IP地址
+  - 后台管理系统可查看用户注册IP、上次登录IP
+  - 后台管理系统可查看漂流瓶和评论的IP地址
+  - 用户详情页面显示注册IP、登录IP和评论内容
+  - 漂流瓶详情页面显示漂流瓶IP和评论IP
+  - 评论管理页面显示每条评论的IP地址
+
 - **评论回复功能（二级评论）**
   - 支持对评论进行回复，实现二级评论结构
   - 回复以缩进方式显示，左侧有边框标识
@@ -58,7 +69,11 @@
 - `comments` 表新增字段：
   - `parent_id` (INT(11), NULL): 父评论ID，NULL表示一级评论
   - `reply_to_user_id` (INT(11), NULL): 回复的目标用户ID
-- 新增索引：`idx_parent_id`、`idx_reply_to_user_id`
+  - `ip_address` (VARCHAR(50), NULL): 评论IP地址
+- `users` 表新增字段：
+  - `register_ip` (VARCHAR(50), NULL): 用户注册IP地址
+  - `last_login_ip` (VARCHAR(50), NULL): 用户上次登录IP地址（已存在，现在会自动更新）
+- 新增索引：`idx_parent_id`、`idx_reply_to_user_id`、`idx_ip_address`（评论IP地址索引）
 - 新增外键约束：
   - `parent_id` 引用 `comments(id)` ON DELETE CASCADE
   - `reply_to_user_id` 引用 `users(id)` ON DELETE SET NULL

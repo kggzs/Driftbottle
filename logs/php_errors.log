@@ -1,66 +1,9 @@
-[23-Dec-2025 12:17:39 PRC] ------- 签到请求开始 -------
-[23-Dec-2025 12:17:39 PRC] 用户ID: 5
-[23-Dec-2025 12:17:39 PRC] 请求时间: 2025-12-23 12:17:39
-[23-Dec-2025 12:17:39 PRC] 客户端IP: 127.0.0.1
-[23-Dec-2025 12:17:39 PRC] 用户代理: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0
-[23-Dec-2025 12:17:39 PRC] 调用userCheckin函数...
-[23-Dec-2025 12:17:39 PRC] 开始执行userCheckin函数，用户ID: 5
-[23-Dec-2025 12:17:39 PRC] 准备开始事务处理
-[23-Dec-2025 12:17:39 PRC] 事务开始成功
-[23-Dec-2025 12:17:39 PRC] 检查用户是否今日已签到
-[23-Dec-2025 12:17:39 PRC] 获取昨天的签到记录
-[23-Dec-2025 12:17:39 PRC] 检查用户VIP状态
-[23-Dec-2025 12:17:39 PRC] 插入今天的签到记录
-[23-Dec-2025 12:17:39 PRC] 签到记录插入成功，开始更新用户积分
-[23-Dec-2025 12:17:39 PRC] 记录积分历史
-[23-Dec-2025 12:17:39 PRC] 会话中的积分已更新: 31
-[23-Dec-2025 12:17:39 PRC] 所有操作完成，准备提交事务
-[23-Dec-2025 12:17:39 PRC] 事务提交成功
-[23-Dec-2025 12:17:39 PRC] 签到成功，返回结果
-[23-Dec-2025 12:17:39 PRC] userCheckin函数调用完成，结果: 成功
-[23-Dec-2025 12:17:39 PRC] 响应内容: {"success":true,"consecutive_days":1,"points_earned":10,"is_weekly_bonus":false,"is_vip":false,"vip_bonus_points":0}
-[23-Dec-2025 12:17:39 PRC] ------- 签到请求结束 -------
-[23-Dec-2025 12:18:13 PRC] ------- 签到请求开始 -------
-[23-Dec-2025 12:18:13 PRC] 用户ID: 4
-[23-Dec-2025 12:18:13 PRC] 请求时间: 2025-12-23 12:18:13
-[23-Dec-2025 12:18:13 PRC] 客户端IP: 127.0.0.1
-[23-Dec-2025 12:18:13 PRC] 用户代理: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0
-[23-Dec-2025 12:18:13 PRC] 调用userCheckin函数...
-[23-Dec-2025 12:18:13 PRC] 开始执行userCheckin函数，用户ID: 4
-[23-Dec-2025 12:18:13 PRC] 准备开始事务处理
-[23-Dec-2025 12:18:13 PRC] 事务开始成功
-[23-Dec-2025 12:18:13 PRC] 检查用户是否今日已签到
-[23-Dec-2025 12:18:13 PRC] 获取昨天的签到记录
-[23-Dec-2025 12:18:13 PRC] 检查用户VIP状态
-[23-Dec-2025 12:18:13 PRC] 插入今天的签到记录
-[23-Dec-2025 12:18:13 PRC] 签到记录插入成功，开始更新用户积分
-[23-Dec-2025 12:18:13 PRC] 记录积分历史
-[23-Dec-2025 12:18:13 PRC] 会话中的积分已更新: 49
-[23-Dec-2025 12:18:13 PRC] 所有操作完成，准备提交事务
-[23-Dec-2025 12:18:13 PRC] 事务提交成功
-[23-Dec-2025 12:18:13 PRC] 签到成功，返回结果
-[23-Dec-2025 12:18:13 PRC] userCheckin函数调用完成，结果: 成功
-[23-Dec-2025 12:18:13 PRC] 响应内容: {"success":true,"consecutive_days":1,"points_earned":10,"is_weekly_bonus":false,"is_vip":false,"vip_bonus_points":0}
-[23-Dec-2025 12:18:13 PRC] ------- 签到请求结束 -------
-[23-Dec-2025 12:46:36 PRC] ------- 签到请求开始 -------
-[23-Dec-2025 12:46:36 PRC] 用户ID: 6
-[23-Dec-2025 12:46:36 PRC] 请求时间: 2025-12-23 12:46:36
-[23-Dec-2025 12:46:36 PRC] 客户端IP: 127.0.0.1
-[23-Dec-2025 12:46:36 PRC] 用户代理: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0
-[23-Dec-2025 12:46:36 PRC] 调用userCheckin函数...
-[23-Dec-2025 12:46:36 PRC] 开始执行userCheckin函数，用户ID: 6
-[23-Dec-2025 12:46:36 PRC] 准备开始事务处理
-[23-Dec-2025 12:46:36 PRC] 事务开始成功
-[23-Dec-2025 12:46:36 PRC] 检查用户是否今日已签到
-[23-Dec-2025 12:46:36 PRC] 获取昨天的签到记录
-[23-Dec-2025 12:46:36 PRC] 检查用户VIP状态
-[23-Dec-2025 12:46:36 PRC] 插入今天的签到记录
-[23-Dec-2025 12:46:36 PRC] 签到记录插入成功，开始更新用户积分
-[23-Dec-2025 12:46:36 PRC] 记录积分历史
-[23-Dec-2025 12:46:36 PRC] 会话中的积分已更新: 10
-[23-Dec-2025 12:46:36 PRC] 所有操作完成，准备提交事务
-[23-Dec-2025 12:46:36 PRC] 事务提交成功
-[23-Dec-2025 12:46:36 PRC] 签到成功，返回结果
-[23-Dec-2025 12:46:36 PRC] userCheckin函数调用完成，结果: 成功
-[23-Dec-2025 12:46:36 PRC] 响应内容: {"success":true,"consecutive_days":1,"points_earned":10,"is_weekly_bonus":false,"is_vip":false,"vip_bonus_points":0}
-[23-Dec-2025 12:46:36 PRC] ------- 签到请求结束 -------
+[24-Dec-2025 12:30:51 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 244
+[24-Dec-2025 12:30:51 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 248
+[24-Dec-2025 12:30:51 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 312
+[24-Dec-2025 12:30:59 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 244
+[24-Dec-2025 12:30:59 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 248
+[24-Dec-2025 12:30:59 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 312
+[24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 244
+[24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 248
+[24-Dec-2025 12:31:12 PRC] PHP Notice:  Undefined variable: userIdFilter in E:\www\Driftbottle\admin\comments.php on line 312

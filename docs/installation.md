@@ -97,6 +97,9 @@ mysql -u driftbottle_user -p driftbottle < sql/update_script_name.sql
 | `add_voice_bottle_fields.sql` | 添加语音漂流瓶功能字段 |
 | `add_user_level_system.sql` | 添加用户等级系统字段和表 |
 | `add_description_field.sql` | 添加用户个性签名字段 |
+| `add_comment_reply_support.sql` | 添加评论回复支持（parent_id、reply_to_user_id字段） |
+
+**注意**: v1.3.0 版本已包含IP追踪功能（`users.register_ip`、`users.last_login_ip`、`comments.ip_address`），这些字段已合并到主数据库文件 `driftbottle.sql` 中，无需单独执行 `add_user_ip_tracking.sql` 脚本。
 
 ## 常见问题
 

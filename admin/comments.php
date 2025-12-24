@@ -123,6 +123,7 @@ if (isset($_GET['message'])) {
 // 处理搜索和分页
 $search = sanitizeInput($_GET['search'] ?? '');
 $bottleFilter = isset($_GET['bottle_id']) ? (int)$_GET['bottle_id'] : 0;
+$userIdFilter = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 15;
 $offset = ($page - 1) * $limit;
@@ -241,9 +242,13 @@ $admin->logOperation('评论', '查看', '查看评论列表');
 
 <!-- 内容区域 -->
 <div class="container-fluid px-4">
-    <h1 class="mt-4"><?php echo $pageTitle; ?></h1>
+    <h1 class="mt-4"><?php echo $pageTitle; ?><?php if ($userIdFilter > 0): ?> - 用户ID: <?php echo $userIdFilter; ?><?php endif; ?></h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="index.php">控制台</a></li>
+        <li class="breadcrumb-item"><a href="comments.php">评论管理</a></li>
+        <?php if ($userIdFilter > 0): ?>
+        <li class="breadcrumb-item"><a href="user_detail.php?id=<?php echo $userIdFilter; ?>">用户详情</a></li>
+        <?php endif; ?>
         <li class="breadcrumb-item active"><?php echo $pageTitle; ?></li>
     </ol>
     
@@ -305,6 +310,9 @@ $admin->logOperation('评论', '查看', '查看评论列表');
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" action="comments.php" class="row g-3">
+                <?php if ($userIdFilter > 0): ?>
+                <input type="hidden" name="user_id" value="<?php echo $userIdFilter; ?>">
+                <?php endif; ?>
                 <div class="col-md-6">
                     <label for="search" class="form-label">搜索</label>
                     <input type="text" class="form-control" id="search" name="search" placeholder="评论内容/用户名" value="<?php echo htmlspecialchars($search); ?>">
@@ -340,6 +348,7 @@ $admin->logOperation('评论', '查看', '查看评论列表');
                             <th>评论内容</th>
                             <th width="300">漂流瓶内容</th>
                             <th width="120">发布者</th>
+                            <th width="120">IP地址</th>
                             <th width="150">发布时间</th>
                             <th width="120">操作</th>
                         </tr>
@@ -359,6 +368,7 @@ $admin->logOperation('评论', '查看', '查看评论列表');
                                     </a>
                                 </td>
                                 <td><?php echo htmlspecialchars($comment['user_name'] ?? '未知用户'); ?></td>
+                                <td><?php echo htmlspecialchars($comment['ip_address'] ?? '未记录'); ?></td>
                                 <td><?php echo date('Y-m-d H:i', strtotime($comment['created_at'])); ?></td>
                                 <td>
                                     <a href="bottle_detail.php?id=<?php echo $comment['bottle_id']; ?>#comment-<?php echo $comment['id']; ?>" class="btn btn-sm btn-info">
@@ -372,7 +382,7 @@ $admin->logOperation('评论', '查看', '查看评论列表');
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="text-center">没有找到评论</td>
+                                <td colspan="7" class="text-center">没有找到评论</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

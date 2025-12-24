@@ -179,6 +179,7 @@ if ($action === 'delete' && $id > 0) {
 $search = sanitizeInput($_GET['search'] ?? '');
 $status = sanitizeInput($_GET['status'] ?? '');
 $mood = sanitizeInput($_GET['mood'] ?? '');
+$userIdFilter = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
@@ -194,6 +195,12 @@ if (!empty($search)) {
     $params[] = $searchParam;
     $params[] = $searchParam;
     $types .= 'ss';
+}
+
+if ($userIdFilter > 0) {
+    $where[] = "b.user_id = ?";
+    $params[] = $userIdFilter;
+    $types .= 'i';
 }
 
 if (!empty($status)) {
@@ -330,9 +337,13 @@ $admin->logOperation('漂流瓶', '查看', '查看漂流瓶列表');
 
 <!-- 内容区域 -->
 <div class="container-fluid px-4">
-    <h1 class="mt-4"><?php echo $pageTitle; ?></h1>
+    <h1 class="mt-4"><?php echo $pageTitle; ?><?php if ($userIdFilter > 0): ?> - 用户ID: <?php echo $userIdFilter; ?><?php endif; ?></h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="index.php">控制台</a></li>
+        <li class="breadcrumb-item"><a href="bottles.php">漂流瓶管理</a></li>
+        <?php if ($userIdFilter > 0): ?>
+        <li class="breadcrumb-item"><a href="user_detail.php?id=<?php echo $userIdFilter; ?>">用户详情</a></li>
+        <?php endif; ?>
         <li class="breadcrumb-item active"><?php echo $pageTitle; ?></li>
     </ol>
     
@@ -408,7 +419,7 @@ $admin->logOperation('漂流瓶', '查看', '查看漂流瓶列表');
                 <div class="col-md-2 d-flex align-items-end">
                     <div class="d-grid gap-2 w-100">
                         <button type="submit" class="btn btn-primary">搜索</button>
-                        <a href="bottles.php" class="btn btn-secondary">重置</a>
+                        <a href="bottles.php<?php echo $userIdFilter > 0 ? '?user_id=' . $userIdFilter : ''; ?>" class="btn btn-secondary">重置</a>
                     </div>
                 </div>
             </form>
@@ -504,17 +515,17 @@ $admin->logOperation('漂流瓶', '查看', '查看漂流瓶列表');
             <nav>
                 <ul class="pagination justify-content-center">
                     <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>">上一页</a>
+                        <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>&user_id=<?php echo $userIdFilter; ?>">上一页</a>
                     </li>
                     
                     <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
                     <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>&user_id=<?php echo $userIdFilter; ?>"><?php echo $i; ?></a>
                     </li>
                     <?php endfor; ?>
                     
                     <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>">下一页</a>
+                        <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&mood=<?php echo urlencode($mood); ?>&status=<?php echo $status; ?>&user_id=<?php echo $userIdFilter; ?>">下一页</a>
                     </li>
                 </ul>
             </nav>

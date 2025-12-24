@@ -63,8 +63,12 @@ if (isset($_GET['action'])) {
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $vip_expire_date = $is_vip ? date('Y-m-d', strtotime('+1 year')) : null;
                 
-                $insertStmt = $conn->prepare("INSERT INTO users (username, password, gender, signature, points, is_vip, vip_level, vip_expire_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $insertStmt->bind_param("ssssiissi", $username, $hashedPassword, $gender, $signature, $points, $is_vip, $vip_level, $vip_expire_date, $status);
+                // 获取注册IP（后台添加用户时，记录管理员IP）
+                require_once __DIR__ . '/../includes/bottle.php';
+                $registerIp = getClientIpAddress();
+                
+                $insertStmt = $conn->prepare("INSERT INTO users (username, password, gender, signature, points, is_vip, vip_level, vip_expire_date, status, register_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt->bind_param("ssssiissis", $username, $hashedPassword, $gender, $signature, $points, $is_vip, $vip_level, $vip_expire_date, $status, $registerIp);
                 
                 if ($insertStmt->execute()) {
                     $newUserId = $conn->insert_id;

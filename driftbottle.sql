@@ -1,7 +1,7 @@
 -- 漂流瓶系统数据库初始化脚本
--- 版本: v1.3.0 (包含语音漂流瓶功能、用户等级系统、评论回复功能)
+-- 版本: v1.3.0 (包含语音漂流瓶功能、用户等级系统、评论回复功能、IP追踪功能)
 -- 更新日期: 2024-12-20
--- 最后更新: 2024-12-20 (合并所有SQL更新，包括评论回复支持)
+-- 最后更新: 2024-12-20 (合并所有SQL更新，包括评论回复支持和IP追踪功能)
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS `driftbottle` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `vip_level` INT(11) DEFAULT 0,
     `status` TINYINT(1) DEFAULT 1 COMMENT '0:禁用 1:启用',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `register_ip` VARCHAR(50) DEFAULT NULL COMMENT '注册IP地址',
+    `last_login_ip` VARCHAR(50) DEFAULT NULL COMMENT '上次登录IP地址',
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -105,12 +107,14 @@ CREATE TABLE IF NOT EXISTS `comments` (
     `user_id` INT(11) NOT NULL,
     `content` TEXT NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `ip_address` VARCHAR(50) DEFAULT NULL COMMENT '评论IP地址',
     FOREIGN KEY (`bottle_id`) REFERENCES `bottles`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`parent_id`) REFERENCES `comments`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`reply_to_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
     INDEX `idx_parent_id` (`parent_id`),
-    INDEX `idx_reply_to_user_id` (`reply_to_user_id`)
+    INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
+    INDEX `idx_ip_address` (`ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 创建点赞表

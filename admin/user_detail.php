@@ -100,6 +100,23 @@ while ($row = $recentBottlesResult->fetch_assoc()) {
 }
 $recentBottlesStmt->close();
 
+// 查询用户最近的评论
+$recentCommentsQuery = "SELECT c.*, b.id as bottle_id, b.content as bottle_content 
+                        FROM comments c 
+                        LEFT JOIN bottles b ON c.bottle_id = b.id 
+                        WHERE c.user_id = ? 
+                        ORDER BY c.created_at DESC 
+                        LIMIT 5";
+$recentCommentsStmt = $conn->prepare($recentCommentsQuery);
+$recentCommentsStmt->bind_param("i", $userId);
+$recentCommentsStmt->execute();
+$recentCommentsResult = $recentCommentsStmt->get_result();
+$recentComments = [];
+while ($row = $recentCommentsResult->fetch_assoc()) {
+    $recentComments[] = $row;
+}
+$recentCommentsStmt->close();
+
 // 处理编辑用户请求
 if (isset($_POST['action']) && $_POST['action'] === 'edit_user') {
     // 获取表单数据
@@ -238,6 +255,16 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                 </div>
                 
                 <div class="mb-3">
+                    <label class="form-label">注册IP</label>
+                    <p class="form-control"><?php echo htmlspecialchars($user['register_ip'] ?? '未记录'); ?></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">上次登录IP</label>
+                    <p class="form-control"><?php echo htmlspecialchars($user['last_login_ip'] ?? '未记录'); ?></p>
+                </div>
+                
+                <div class="mb-3">
                     <label class="form-label">最后更新时间</label>
                     <p class="form-control"><?php echo date('Y-m-d H:i:s', strtotime($user['updated_at'])); ?></p>
                 </div>
@@ -373,6 +400,53 @@ $pageActions = '<a href="users.php" class="btn btn-secondary"><i class="bi bi-ar
                 </div>
                 <div class="text-center">
                     <a href="bottles.php?user_id=<?php echo $userId; ?>" class="btn btn-sm btn-primary">查看全部漂流瓶</a>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- 最近评论 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="m-0">最近发表的评论</h5>
+            </div>
+            <div class="card-body">
+                <?php if (empty($recentComments)): ?>
+                <p class="text-center text-muted">该用户尚未发表评论</p>
+                <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>评论内容</th>
+                                <th>关联漂流瓶</th>
+                                <th>IP地址</th>
+                                <th>发布时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentComments as $comment): ?>
+                            <tr>
+                                <td><?php echo $comment['id']; ?></td>
+                                <td><?php echo mb_substr(htmlspecialchars($comment['content']), 0, 50) . (mb_strlen($comment['content']) > 50 ? '...' : ''); ?></td>
+                                <td>
+                                    <a href="bottle_detail.php?id=<?php echo $comment['bottle_id']; ?>" class="text-decoration-none">
+                                        <?php 
+                                        $bottleContent = htmlspecialchars($comment['bottle_content'] ?? '');
+                                        echo mb_strlen($bottleContent) > 30 ? mb_substr($bottleContent, 0, 30) . '...' : $bottleContent; 
+                                        ?>
+                                    </a>
+                                </td>
+                                <td><?php echo htmlspecialchars($comment['ip_address'] ?? '未记录'); ?></td>
+                                <td><?php echo date('Y-m-d H:i', strtotime($comment['created_at'])); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center">
+                    <a href="comments.php?user_id=<?php echo $userId; ?>" class="btn btn-sm btn-primary">查看全部评论</a>
                 </div>
                 <?php endif; ?>
             </div>

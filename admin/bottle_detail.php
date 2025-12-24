@@ -187,7 +187,10 @@ $pageActions .= '<a href="bottles.php?action=delete&id=' . $id . '" class="btn b
                             <div class="card-header d-flex justify-content-between align-items-center bg-light py-2">
                                 <div>
                                     <strong><?php echo htmlspecialchars($comment['username'] ?? '未知用户'); ?></strong>
-                                    <small class="text-muted ms-2"><?php echo date('Y-m-d H:i', strtotime($comment['created_at'])); ?></small>
+                                    <small class="text-muted ms-2">
+                                        <?php echo date('Y-m-d H:i', strtotime($comment['created_at'])); ?>
+                                        | IP: <?php echo !empty($comment['ip_address']) ? htmlspecialchars($comment['ip_address']) : '未记录'; ?>
+                                    </small>
                                 </div>
                                 <div>
                                     <a href="bottle_detail.php?id=<?php echo $id; ?>&action=delete_comment&comment_id=<?php echo $comment['id']; ?>" 

@@ -446,13 +446,16 @@ function pickRandomBottle($userId) {
 function commentAndThrowBottle($bottleId, $userId, $content, $parentId = null, $replyToUserId = null, $throwBack = true) {
     $conn = getDbConnection();
     
+    // 获取评论IP地址
+    $commentIp = getClientIpAddress();
+    
     // 先添加评论（支持回复）
     if ($parentId) {
-        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content, parent_id, reply_to_user_id) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisii", $bottleId, $userId, $content, $parentId, $replyToUserId);
+        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content, parent_id, reply_to_user_id, ip_address) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisiss", $bottleId, $userId, $content, $parentId, $replyToUserId, $commentIp);
     } else {
-        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $bottleId, $userId, $content);
+        $stmt = $conn->prepare("INSERT INTO comments (bottle_id, user_id, content, ip_address) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("iiss", $bottleId, $userId, $content, $commentIp);
     }
     
     if ($stmt->execute()) {

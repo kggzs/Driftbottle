@@ -214,6 +214,7 @@
     - `update_announcements.sql`: 公告系统相关更新。
     - `add_voice_bottle_fields.sql`: 添加语音漂流瓶功能（`bottle_type`、`audio_file`、`audio_duration` 字段）。
     - `add_user_level_system.sql`: 添加用户等级系统（`experience`、`level` 字段和 `experience_history` 表）。
+    - **注意**: v1.3.0 版本已包含IP追踪功能，`add_user_ip_tracking.sql` 已合并到主数据库文件 `driftbottle.sql` 中，无需单独执行。
 
 ## ❓ 常见问题 (FAQ)
 
@@ -341,6 +342,16 @@ driftbottle/
 ## ⏳ 更新历史
 
 - **v1.3.0** (2024-12-20): 
+    - 🔍 **IP地址追踪功能**：
+        - 用户注册时自动记录注册IP地址
+        - 用户登录时自动更新上次登录IP地址
+        - 发布漂流瓶时自动记录IP地址
+        - 发表评论时自动记录IP地址
+        - 后台管理系统可查看用户注册IP、上次登录IP
+        - 后台管理系统可查看漂流瓶和评论的IP地址
+        - 用户详情页面显示注册IP、登录IP和评论内容
+        - 漂流瓶详情页面显示漂流瓶IP和评论IP
+        - 评论管理页面显示每条评论的IP地址
     - 💬 **评论回复功能**：
         - 支持二级评论回复（回复评论）
         - 评论以层级结构显示，回复缩进显示
@@ -364,8 +375,10 @@ driftbottle/
         - 修复个性签名更新成功弹窗位置问题
         - 优化未读消息按钮显示样式
     - 🗄️ **数据库更新**：
-        - `comments` 表新增字段：`parent_id`、`reply_to_user_id`
+        - `comments` 表新增字段：`parent_id`、`reply_to_user_id`、`ip_address`
+        - `users` 表新增字段：`register_ip`、`last_login_ip`（已存在，现在会自动更新）
         - 添加相应的索引和外键约束
+        - 添加评论IP地址索引 `idx_ip_address`
     - 🗑️ **功能移除**：
         - 删除"显示全部漂流瓶"按钮（所有漂流瓶默认显示）
 - **v1.2.0** (2024-12-20): 
@@ -401,9 +414,7 @@ driftbottle/
 - [x] ~~用户等级与成就系统~~ ✅ 已实现
 - [ ] 漂流瓶内容分类/标签系统
 - [ ] 用户间私信功能
-- [ ] 漂流瓶收藏夹
 - [ ] 更丰富的用户个性化设置
-- [ ] 移动端适配或 App 开发
 
 ## 📜 开源协议
 
