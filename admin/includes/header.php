@@ -184,6 +184,12 @@ ob_start();
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link <?php echo $currentPage == 'reports.php' ? 'active' : ''; ?>" href="reports.php">
+                        <i class="fas fa-flag"></i>
+                        举报管理
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link <?php echo $currentPage == 'announcements.php' ? 'active' : ''; ?>" href="announcements.php">
                         <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
                         公告管理

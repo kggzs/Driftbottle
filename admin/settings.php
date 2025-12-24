@@ -33,6 +33,7 @@ function getSettingMetadata($key, $group) {
         'POINTS_PER_VIP_CHECKIN' => 'VIP会员每次签到额外积分',
         'POINTS_PER_BOTTLE' => '扔漂流瓶消耗积分',
         'POINTS_PER_LIKE' => '收到点赞获得积分',
+        'POINTS_PER_REPORT_APPROVED' => '举报成功奖励积分',
         'DAILY_BOTTLE_LIMIT' => '普通用户每日扔瓶限制',
         'DAILY_PICK_LIMIT' => '普通用户每日捡瓶限制',
         'VIP_DAILY_BOTTLE_LIMIT' => 'VIP用户每日扔瓶限制',

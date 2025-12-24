@@ -1,1 +1,37 @@
-[24-Dec-2025 20:33:56 PRC] 保存设置异常: 保存设置时出现错误: 插入设置失败 (SITE_NAME): Duplicate entry 'SITE_NAME' for key 'setting_key'; 插入设置失败 (SITE_URL): Duplicate entry 'SITE_URL' for key 'setting_key'; 插入设置失败 (ADMIN_EMAIL): Duplicate entry 'ADMIN_EMAIL' for key 'setting_key'; 插入设置失败 (AMAP_API_KEY): Duplicate entry 'AMAP_API_KEY' for key 'setting_key'; 插入设置失败 (COPYRIGHT_INFO): Duplicate entry 'COPYRIGHT_INFO' for key 'setting_key'; 插入设置失败 (WEBMASTER_EMAIL): Duplicate entry 'WEBMASTER_EMAIL' for key 'setting_key'; 插入设置失败 (POINTS_PER_CHECKIN): Duplicate entry 'POINTS_PER_CHECKIN' for key 'setting_key'; 插入设置失败 (POINTS_PER_WEEKLY_CHECKIN): Duplicate entry 'POINTS_PER_WEEKLY_CHECKIN' for key 'setting_key'; 插入设置失败 (POINTS_PER_VIP_CHECKIN): Duplicate entry 'POINTS_PER_VIP_CHECKIN' for key 'setting_key'; 插入设置失败 (POINTS_PER_BOTTLE): Duplicate entry 'POINTS_PER_BOTTLE' for key 'setting_key'; 插入设置失败 (POINTS_PER_LIKE): Duplicate entry 'POINTS_PER_LIKE' for key 'setting_key'; 插入设置失败 (DAILY_BOTTLE_LIMIT): Duplicate entry 'DAILY_BOTTLE_LIMIT' for key 'setting_key'; 插入设置失败 (DAILY_PICK_LIMIT): Duplicate entry 'DAILY_PICK_LIMIT' for key 'setting_key'; 插入设置失败 (VIP_DAILY_BOTTLE_LIMIT): Duplicate entry 'VIP_DAILY_BOTTLE_LIMIT' for key 'setting_key'; 插入设置失败 (VIP_DAILY_PICK_LIMIT): Duplicate entry 'VIP_DAILY_PICK_LIMIT' for key 'setting_key'; 插入设置失败 (MAX_BOTTLE_LENGTH): Duplicate entry 'MAX_BOTTLE_LENGTH' for key 'setting_key'; 插入设置失败 (MAX_COMMENT_LENGTH): Duplicate entry 'MAX_COMMENT_LENGTH' for key 'setting_key'; 插入设置失败 (MAX_SIGNATURE_LENGTH): Duplicate entry 'MAX_SIGNATURE_LENGTH' for key 'setting_key'; 插入设置失败 (VIP_POINTS_1_MONTH): Duplicate entry 'VIP_POINTS_1_MONTH' for key 'setting_key'; 插入设置失败 (VIP_POINTS_3_MONTHS): Duplicate entry 'VIP_POINTS_3_MONTHS' for key 'setting_key'; 插入设置失败 (VIP_POINTS_6_MONTHS): Duplicate entry 'VIP_POINTS_6_MONTHS' for key 'setting_key'; 插入设置失败 (VIP_POINTS_12_MONTHS): Duplicate entry 'VIP_POINTS_12_MONTHS' for key 'setting_key'; 插入设置失败 (EXP_PER_BOTTLE): Duplicate entry 'EXP_PER_BOTTLE' for key 'setting_key'; 插入设置失败 (EXP_PER_PICK): Duplicate entry 'EXP_PER_PICK' for key 'setting_key'; 插入设置失败 (EXP_PER_COMMENT): Duplicate entry 'EXP_PER_COMMENT' for key 'setting_key'
+[24-Dec-2025 23:28:09 PRC] 准备执行UPDATE: target_type='bottle', target_id=9, oldStatus='approved', newStatus='pending', adminId=2, action='no_action', note='', recheckCount=1
+[24-Dec-2025 23:28:09 PRC] 审核举报UPDATE执行结果: affected_rows=1, recheckCount=1, target_type=bottle, target_id=9, oldStatus=approved, newStatus=pending
+[24-Dec-2025 23:28:12 PRC] 准备发送举报反馈消息: reporter_id=4, targetContentId=9, action=no_action, messageContent=您的举报已审核通过，管理员已已处理该举报。感谢您为维护社区环境做出的贡献！
+[24-Dec-2025 23:28:12 PRC] 成功发送举报反馈消息: message_id=21, reporter_id=4, targetContentId=9
+[24-Dec-2025 23:28:12 PRC] 准备发送被举报人处理通知: owner_id=6, targetContentId=9, action=no_action, reason=涉及违法违规内容
+[24-Dec-2025 23:28:12 PRC] 成功发送被举报人处理通知: message_id=22, owner_id=6, targetContentId=9
+[24-Dec-2025 23:28:12 PRC] 准备执行UPDATE: target_type='bottle', target_id=9, oldStatus='pending', newStatus='approved', adminId=2, action='no_action', note='', recheckCount=1
+[24-Dec-2025 23:28:12 PRC] 审核举报UPDATE执行结果: affected_rows=1, recheckCount=1, target_type=bottle, target_id=9, oldStatus=pending, newStatus=approved
+[24-Dec-2025 23:28:17 PRC] 准备执行UPDATE: target_type='bottle', target_id=9, oldStatus='approved', newStatus='pending', adminId=2, action='hide_bottle', note='', recheckCount=1
+[24-Dec-2025 23:28:17 PRC] 审核举报UPDATE执行结果: affected_rows=1, recheckCount=1, target_type=bottle, target_id=9, oldStatus=approved, newStatus=pending
+[24-Dec-2025 23:28:21 PRC] 准备发送举报反馈消息: reporter_id=4, targetContentId=9, action=hide_bottle, messageContent=您的举报已审核通过，管理员已已屏蔽该漂流瓶内容。感谢您为维护社区环境做出的贡献！
+[24-Dec-2025 23:28:21 PRC] 成功发送举报反馈消息: message_id=23, reporter_id=4, targetContentId=9
+[24-Dec-2025 23:28:21 PRC] 准备发送被举报人处理通知: owner_id=6, targetContentId=9, action=hide_bottle, reason=涉及违法违规内容
+[24-Dec-2025 23:28:21 PRC] 成功发送被举报人处理通知: message_id=24, owner_id=6, targetContentId=9
+[24-Dec-2025 23:28:21 PRC] 准备执行UPDATE: target_type='bottle', target_id=9, oldStatus='pending', newStatus='approved', adminId=2, action='hide_bottle', note='', recheckCount=1
+[24-Dec-2025 23:28:21 PRC] 审核举报UPDATE执行结果: affected_rows=1, recheckCount=1, target_type=bottle, target_id=9, oldStatus=pending, newStatus=approved
+[24-Dec-2025 23:28:53 PRC] VIP用户 6 的免费次数使用情况：
+[24-Dec-2025 23:28:53 PRC] 已使用总次数: 8
+[24-Dec-2025 23:28:53 PRC] 已使用普通次数: 8
+[24-Dec-2025 23:28:53 PRC] 已使用VIP额外次数: 0
+[24-Dec-2025 23:28:53 PRC] 普通免费剩余: 93
+[24-Dec-2025 23:28:53 PRC] VIP专属剩余: 50
+[24-Dec-2025 23:28:53 PRC] 总免费剩余: 143
+[24-Dec-2025 23:28:54 PRC] VIP用户 6 的免费次数使用情况：
+[24-Dec-2025 23:28:54 PRC] 已使用总次数: 8
+[24-Dec-2025 23:28:54 PRC] 已使用普通次数: 8
+[24-Dec-2025 23:28:54 PRC] 已使用VIP额外次数: 0
+[24-Dec-2025 23:28:54 PRC] 普通免费剩余: 93
+[24-Dec-2025 23:28:54 PRC] VIP专属剩余: 50
+[24-Dec-2025 23:28:54 PRC] 总免费剩余: 143
+[24-Dec-2025 23:28:54 PRC] VIP用户 6 的免费次数使用情况：
+[24-Dec-2025 23:28:54 PRC] 已使用总次数: 8
+[24-Dec-2025 23:28:54 PRC] 已使用普通次数: 8
+[24-Dec-2025 23:28:54 PRC] 已使用VIP额外次数: 0
+[24-Dec-2025 23:28:54 PRC] 普通免费剩余: 93
+[24-Dec-2025 23:28:54 PRC] VIP专属剩余: 50
+[24-Dec-2025 23:28:54 PRC] 总免费剩余: 143

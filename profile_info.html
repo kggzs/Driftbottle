@@ -439,24 +439,44 @@
                             const messageClass = message.is_read ? '' : 'border-start border-primary border-3';
                             const cursorStyle = !message.is_read ? 'cursor: pointer;' : '';
                             
-                            messagesHtml += `
-                                <div class="card mb-2 ${messageClass} message-item" 
-                                     data-message-id="${message.id}" 
-                                     data-is-read="${message.is_read ? '1' : '0'}"
-                                     style="${cursorStyle}"
-                                     ${!message.is_read ? 'title="点击标记为已读"' : ''}>
-                                    <div class="card-body">
-                                        <div class="message-content">
-                                            <div class="message-info">
-                                                <h6>来自: ${message.from_username || '未知用户'}</h6>
-                                                <p>${message.bottle_content || '消息内容'}</p>
-                                                <small class="text-muted">${messageTime}</small>
-                                            </div>
-                                            ${!message.is_read ? '<span class="badge unread-badge">未读</span>' : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
+                            // 根据消息类型显示不同的内容
+                            let messageDisplayContent = message.display_content || message.content || message.bottle_content || '消息内容';
+                            let messageTitle = message.from_username || '未知用户';
+                            let isOwnerWarning = false; // 是否为被举报人的警告消息
+                            
+                            if (message.type === '举报反馈') {
+                                // 举报反馈消息显示特殊样式
+                                messageDisplayContent = message.content || messageDisplayContent;
+                                // 判断是否为被举报人通知（内容包含"您的"且包含"被"处理字样）
+                                if (messageDisplayContent.includes('您的') && (messageDisplayContent.includes('被删除') || messageDisplayContent.includes('被屏蔽') || messageDisplayContent.includes('被处理'))) {
+                                    isOwnerWarning = true;
+                                }
+                            }
+                            
+                            // 如果是被举报人警告消息，使用红色警告样式
+                            const warningClass = isOwnerWarning ? 'border-danger border-3 bg-danger bg-opacity-10' : '';
+                            const warningIcon = isOwnerWarning ? '<i class="fas fa-exclamation-triangle text-danger me-2"></i>' : '';
+                            
+                            const badgeColor = isOwnerWarning ? 'bg-danger' : 'bg-info';
+                            const textColor = isOwnerWarning ? 'text-danger fw-bold' : '';
+                            const badgeHtml = message.type === '举报反馈' ? ' <span class="badge ' + badgeColor + '">举报反馈</span>' : '';
+                            
+                            messagesHtml += '<div class="card mb-2 ' + messageClass + ' ' + warningClass + ' message-item" ' +
+                                     'data-message-id="' + message.id + '" ' +
+                                     'data-is-read="' + (message.is_read ? '1' : '0') + '" ' +
+                                     'style="' + cursorStyle + '"' +
+                                     (!message.is_read ? ' title="点击标记为已读"' : '') + '>' +
+                                    '<div class="card-body">' +
+                                        '<div class="message-content">' +
+                                            '<div class="message-info">' +
+                                                '<h6>' + warningIcon + '来自: ' + messageTitle + badgeHtml + '</h6>' +
+                                                '<p class="' + textColor + '">' + messageDisplayContent + '</p>' +
+                                                '<small class="text-muted">' + messageTime + '</small>' +
+                                            '</div>' +
+                                            (!message.is_read ? '<span class="badge unread-badge">未读</span>' : '') +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>';
                         });
                         
                         messagesList.innerHTML = messagesHtml;

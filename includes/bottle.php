@@ -344,6 +344,12 @@ function pickRandomBottle($userId) {
             $bottle['username'] = '匿名用户';
         }
         
+        // 处理屏蔽内容（屏蔽后内容不显示，但漂流瓶仍可以捡起）
+        if ($bottle['is_hidden'] == 1) {
+            $bottle['original_content'] = $bottle['content'];
+            $bottle['content'] = '该内容已被屏蔽';
+        }
+        
         // 处理IP地址显示（VIP可以看到完整IP，非VIP看到掩盖的IP）
         if ($isVip) {
             $bottle['ip_address'] = $bottle['ip_address'];
@@ -398,6 +404,12 @@ function pickRandomBottle($userId) {
         $comments = [];
         $replies = [];
         while ($comment = $commentsResult->fetch_assoc()) {
+            // 处理屏蔽的评论内容
+            if ($comment['is_hidden'] == 1) {
+                $comment['original_content'] = $comment['content'];
+                $comment['content'] = '该评论已被屏蔽';
+            }
+            
             if ($comment['parent_id'] === null) {
                 // 一级评论
                 $comment['replies'] = [];
@@ -625,6 +637,11 @@ function getUserBottles($userId) {
     $bottles = [];
     $bottleIds = [];
     while ($bottle = $result->fetch_assoc()) {
+        // 处理屏蔽的漂流瓶内容
+        if ($bottle['is_hidden'] == 1) {
+            $bottle['original_content'] = $bottle['content'];
+            $bottle['content'] = '该内容已被屏蔽';
+        }
         $bottles[$bottle['id']] = $bottle;
         $bottleIds[] = $bottle['id'];
     }
@@ -668,6 +685,12 @@ function getUserBottles($userId) {
             
             if (isset($allComments[$bottleId])) {
                 foreach ($allComments[$bottleId] as $comment) {
+                    // 处理屏蔽的评论内容
+                    if ($comment['is_hidden'] == 1) {
+                        $comment['original_content'] = $comment['content'];
+                        $comment['content'] = '该评论已被屏蔽';
+                    }
+                    
                     if ($comment['parent_id'] === null) {
                         // 一级评论
                         $comment['replies'] = [];
@@ -722,6 +745,12 @@ function getUserPickedBottles($userId) {
             $bottle['username'] = '匿名用户';
         }
         
+        // 处理屏蔽的漂流瓶内容
+        if ($bottle['is_hidden'] == 1) {
+            $bottle['original_content'] = $bottle['content'];
+            $bottle['content'] = '该内容已被屏蔽';
+        }
+        
         // 获取该漂流瓶的评论（包括回复）
         $commentStmt = $conn->prepare("
             SELECT c.*, u.username, u.gender,
@@ -742,6 +771,12 @@ function getUserPickedBottles($userId) {
         $comments = [];
         $replies = [];
         while ($comment = $commentsResult->fetch_assoc()) {
+            // 处理屏蔽的评论内容
+            if ($comment['is_hidden'] == 1) {
+                $comment['original_content'] = $comment['content'];
+                $comment['content'] = '该评论已被屏蔽';
+            }
+            
             if ($comment['parent_id'] === null) {
                 // 一级评论
                 $comment['replies'] = [];
@@ -777,11 +812,20 @@ function getUserMessages($userId) {
     $conn = getDbConnection();
     
     $stmt = $conn->prepare("
-        SELECT m.*, b.content as bottle_content, 
-               u.username as from_username, u.gender as from_gender
+        SELECT m.*, 
+               COALESCE(m.content, b.content) as display_content,
+               b.content as bottle_content, 
+               CASE 
+                   WHEN m.from_user_id IS NULL THEN '系统消息'
+                   ELSE u.username 
+               END as from_username,
+               CASE 
+                   WHEN m.from_user_id IS NULL THEN NULL
+                   ELSE u.gender 
+               END as from_gender
         FROM messages m
-        JOIN bottles b ON m.bottle_id = b.id
-        JOIN users u ON m.from_user_id = u.id
+        LEFT JOIN bottles b ON m.bottle_id = b.id
+        LEFT JOIN users u ON m.from_user_id = u.id AND m.from_user_id IS NOT NULL
         WHERE m.user_id = ?
         ORDER BY m.created_at DESC
     ");

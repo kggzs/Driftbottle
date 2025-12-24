@@ -319,6 +319,17 @@
                 `;
             }
             
+            // 举报按钮
+            const reportBtnHtml = `
+                <button class="btn btn-sm btn-link p-0 mt-1 report-btn ms-2" 
+                        data-target-type="comment" 
+                        data-target-id="${comment.id}"
+                        style="font-size: 0.85rem; color: #ffc107; text-decoration: none;"
+                        title="举报违规评论">
+                    <i class="fas fa-flag"></i> 举报
+                </button>
+            `;
+            
             return `
                 <div class="comment-item p-2 mb-2 border-bottom" style="background-color: #f8f9fa; border-radius: 4px;" data-comment-id="${comment.id}">
                     <div class="d-flex justify-content-between align-items-start mb-1">
@@ -326,7 +337,10 @@
                             ${commentUsernameDisplay}
                             ${comment.reply_to_username ? `<span class="text-muted" style="font-size: 0.85rem;"> 回复 <span class="text-primary">${escapeHtml(comment.reply_to_username)}</span></span>` : ''}
                         </div>
-                        <small class="text-muted" style="font-size: 0.8rem;">${commentTime}</small>
+                        <div class="d-flex align-items-center">
+                            <small class="text-muted" style="font-size: 0.8rem;">${commentTime}</small>
+                            ${reportBtnHtml}
+                        </div>
                     </div>
                     <p class="mb-0" style="font-size: 0.9rem; color: #495057; white-space: pre-wrap;">${escapedContent}</p>
                     ${replyBtnHtml}
@@ -566,6 +580,9 @@
                             <span class="bottle-btn comment-count" title="点击评论并扔回大海" style="color: #0d6efd; text-decoration: underline; cursor: pointer;">
                                 <i class="fas fa-comment"></i> ${bottle.comment_count || 0} 评论
                             </span>
+                            <button class="btn btn-sm btn-outline-warning report-btn ms-2" data-target-type="bottle" data-target-id="${bottle.id}" title="举报违规内容">
+                                <i class="fas fa-flag"></i> 举报
+                            </button>
                         </div>
                         <div class="mt-3">
                             <button class="btn btn-primary comment-btn w-100 py-2 mb-2" data-bottle-id="${bottle.id}" style="font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
@@ -973,6 +990,135 @@
                 Logger.error('页面初始化错误:', error);
                 showAlert('页面加载失败，请刷新重试', 'danger');
             }
+        }
+        
+        // 举报功能
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.report-btn')) {
+                const btn = e.target.closest('.report-btn');
+                const targetType = btn.dataset.targetType;
+                const targetId = btn.dataset.targetId;
+                showReportModal(targetType, targetId);
+            }
+        });
+        
+        // 显示举报模态框
+        function showReportModal(targetType, targetId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'reportModal';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">举报${targetType === 'bottle' ? '漂流瓶' : '评论'}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="reportForm">
+                                <input type="hidden" name="target_type" value="${targetType}">
+                                <input type="hidden" name="target_id" value="${targetId}">
+                                <div class="mb-3">
+                                    <label for="reportReason" class="form-label">举报理由</label>
+                                    <select class="form-select mb-2" id="reportReasonSelect" onchange="handleReportReasonSelect()">
+                                        <option value="">请选择或自定义举报理由</option>
+                                        <option value="涉及违法违规内容">涉及违法违规内容</option>
+                                        <option value="包含色情、低俗信息">包含色情、低俗信息</option>
+                                        <option value="包含暴力、恐怖内容">包含暴力、恐怖内容</option>
+                                        <option value="存在恶意攻击、辱骂">存在恶意攻击、辱骂</option>
+                                        <option value="发布虚假信息、谣言">发布虚假信息、谣言</option>
+                                        <option value="涉及诈骗、广告">涉及诈骗、广告</option>
+                                        <option value="侵犯他人隐私">侵犯他人隐私</option>
+                                        <option value="其他违规内容">其他违规内容</option>
+                                        <option value="custom">自定义理由</option>
+                                    </select>
+                                    <textarea class="form-control" id="reportReason" name="reason" rows="4" required placeholder="请详细描述举报原因..."></textarea>
+                                    <small class="form-text text-muted">您也可以在上方选择默认理由，或在下方的文本框中自定义举报理由</small>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-warning" id="submitReportBtn">提交举报</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            
+            // 处理举报理由选择
+            window.handleReportReasonSelect = function() {
+                const select = document.getElementById('reportReasonSelect');
+                const textarea = document.getElementById('reportReason');
+                if (select.value && select.value !== 'custom') {
+                    textarea.value = select.value;
+                    textarea.disabled = false;
+                } else if (select.value === 'custom') {
+                    textarea.value = '';
+                    textarea.disabled = false;
+                    textarea.focus();
+                } else {
+                    textarea.value = '';
+                    textarea.disabled = false;
+                }
+            };
+            
+            // 提交举报
+            document.getElementById('submitReportBtn').addEventListener('click', async function() {
+                const form = document.getElementById('reportForm');
+                const formData = new FormData(form);
+                const reason = formData.get('reason').trim();
+                
+                if (!reason) {
+                    showAlert('请输入举报理由', 'warning');
+                    return;
+                }
+                
+                if (reason.length > 500) {
+                    showAlert('举报理由不能超过500字符', 'warning');
+                    return;
+                }
+                
+                this.disabled = true;
+                this.textContent = '提交中...';
+                
+                try {
+                    const response = await fetch('api.php?action=submit_report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            target_type: formData.get('target_type'),
+                            target_id: parseInt(formData.get('target_id')),
+                            reason: reason
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        bsModal.hide();
+                        showAlert('举报已提交，我们会尽快审核', 'success');
+                        modal.remove();
+                    } else {
+                        showAlert(data.message || '提交举报失败', 'danger');
+                        this.disabled = false;
+                        this.textContent = '提交举报';
+                    }
+                } catch (error) {
+                    Logger.error('Error:', error);
+                    showAlert('提交举报失败，请稍后再试', 'danger');
+                    this.disabled = false;
+                    this.textContent = '提交举报';
+                }
+            });
+            
+            // 模态框关闭时移除DOM元素
+            modal.addEventListener('hidden.bs.modal', function() {
+                modal.remove();
+            });
         }
         
         document.addEventListener('DOMContentLoaded', function() {

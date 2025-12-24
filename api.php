@@ -12,6 +12,7 @@ require_once 'includes/bottle.php';
 require_once 'includes/ip_location.php';
 require_once 'includes/security.php';
 require_once 'includes/validator.php';
+require_once 'includes/report.php';
 
 // 初始化安全中间件
 Security::init();
@@ -935,6 +936,51 @@ switch ($endpoint) {
                 'WEBMASTER_EMAIL' => WEBMASTER_EMAIL
             ]
         ];
+        break;
+        
+    case 'submit_report':
+        // 提交举报
+        if (!isLoggedIn()) {
+            $response = ['success' => false, 'message' => '请先登录'];
+        } else if ($requestMethod === 'POST') {
+            $rules = [
+                'target_type' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'message' => '举报类型不能为空'
+                ],
+                'target_id' => [
+                    'required' => true,
+                    'filter' => 'int',
+                    'message' => '被举报内容ID不能为空'
+                ],
+                'reason' => [
+                    'required' => true,
+                    'filter' => 'string',
+                    'max_length' => 500,
+                    'message' => '举报理由不能为空且不能超过500字符'
+                ]
+            ];
+            
+            $validation = Security::validateInput($data, $rules);
+            
+            if (!$validation['valid']) {
+                $response = ['success' => false, 'message' => array_values($validation['errors'])[0]];
+            } else {
+                $targetType = $validation['data']['target_type'];
+                $targetId = $validation['data']['target_id'];
+                $reason = $validation['data']['reason'];
+                
+                // 验证target_type
+                if (!in_array($targetType, ['bottle', 'comment'])) {
+                    $response = ['success' => false, 'message' => '无效的举报类型'];
+                } else {
+                    $response = submitReport(getCurrentUserId(), $targetType, $targetId, $reason);
+                }
+            }
+        } else {
+            $response = ['success' => false, 'message' => '请求方法不支持'];
+        }
         break;
         
     default:

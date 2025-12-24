@@ -156,6 +156,7 @@ define('POINTS_PER_WEEKLY_CHECKIN', (int)getSetting('POINTS_PER_WEEKLY_CHECKIN',
 define('POINTS_PER_VIP_CHECKIN', (int)getSetting('POINTS_PER_VIP_CHECKIN', 20));
 define('POINTS_PER_BOTTLE', (int)getSetting('POINTS_PER_BOTTLE', 1));
 define('POINTS_PER_LIKE', (int)getSetting('POINTS_PER_LIKE', 1));
+define('POINTS_PER_REPORT_APPROVED', (int)getSetting('POINTS_PER_REPORT_APPROVED', 5));
 
 // 每日限制配置
 define('DAILY_BOTTLE_LIMIT', (int)getSetting('DAILY_BOTTLE_LIMIT', 10));
