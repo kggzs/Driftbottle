@@ -48,6 +48,12 @@ function getSettingMetadata($key, $group) {
         'EXP_PER_BOTTLE' => '发漂流瓶获得经验值',
         'EXP_PER_PICK' => '捡漂流瓶获得经验值',
         'EXP_PER_COMMENT' => '评论获得经验值',
+        'PAYMENT_POINTS_RATIO' => '充值积分比例（1元=多少积分）',
+        'PAYMENT_MERCHANT_ID' => '商户ID',
+        'PAYMENT_PLATFORM_PUBLIC_KEY' => '平台公钥',
+        'PAYMENT_MERCHANT_PRIVATE_KEY' => '商户私钥',
+        'PAYMENT_METHODS' => '可用支付方式（用逗号分隔：alipay,wxpay,qqpay,bank）',
+        'PAYMENT_DEFAULT_METHOD' => '默认支付方式（alipay/wxpay/qqpay/bank）',
     ];
     
     return isset($nameMap[$key]) ? $nameMap[$key] : $key;
@@ -212,6 +218,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
             }
         }
         
+        // 支付配置设置
+        if (isset($_POST['payment'])) {
+            foreach ($_POST['payment'] as $key => $value) {
+                $safeValue = sanitizeInput($value);
+                $settingName = getSettingMetadata($key, 'payment');
+                
+                // 判断字段类型
+                $settingType = 'text';
+                if ($key === 'PAYMENT_POINTS_RATIO') {
+                    $settingType = 'number';
+                    $safeValue = (float)$safeValue; // 确保为数字
+                } else if ($key === 'PAYMENT_PLATFORM_PUBLIC_KEY' || $key === 'PAYMENT_MERCHANT_PRIVATE_KEY') {
+                    $settingType = 'textarea';
+                }
+                
+                $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_name, setting_group, setting_type) 
+                        VALUES (?, ?, ?, 'payment', ?)
+                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                $stmt = $conn->prepare($sql);
+                if ($stmt === false) {
+                    $errors[] = "准备SQL失败 ({$key}): " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("sssss", $key, $safeValue, $settingName, $settingType, $safeValue);
+                if (!$stmt->execute()) {
+                    $errors[] = "保存设置失败 ({$key}): " . $stmt->error;
+                } else {
+                    $updateCount++;
+                }
+                $stmt->close();
+            }
+        }
+        
         // 检查是否有错误
         if (!empty($errors)) {
             try {
@@ -321,6 +360,9 @@ try {
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="experience-tab" data-bs-toggle="tab" data-bs-target="#experience" type="button" role="tab" aria-controls="experience" aria-selected="false">经验值规则</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#payment" type="button" role="tab" aria-controls="payment" aria-selected="false">支付配置</button>
                 </li>
             </ul>
         </div>
@@ -457,6 +499,52 @@ try {
                         </div>
                         <?php endif; ?>
                     </div>
+                    
+                    <!-- 支付配置设置 -->
+                    <div class="tab-pane fade" id="payment" role="tabpanel" aria-labelledby="payment-tab">
+                        <h4 class="mb-3">支付配置设置</h4>
+                        <?php if (isset($settings['payment'])): ?>
+                        <div class="row">
+                            <?php foreach ($settings['payment'] as $setting): ?>
+                            <div class="col-md-12 mb-3">
+                                <label for="<?php echo $setting['setting_key']; ?>" class="form-label"><?php echo $setting['setting_name']; ?></label>
+                                <?php if ($setting['setting_key'] === 'PAYMENT_POINTS_RATIO'): ?>
+                                <input type="number" class="form-control" id="<?php echo $setting['setting_key']; ?>" name="payment[<?php echo $setting['setting_key']; ?>]" value="<?php echo htmlspecialchars($setting['setting_value']); ?>" min="1" step="0.01">
+                                <small class="form-text text-muted">例如：100 表示 1元 = 100积分</small>
+                                <?php elseif ($setting['setting_key'] === 'PAYMENT_PLATFORM_PUBLIC_KEY' || $setting['setting_key'] === 'PAYMENT_MERCHANT_PRIVATE_KEY'): ?>
+                                <div class="input-group">
+                                    <textarea class="form-control" id="<?php echo $setting['setting_key']; ?>" name="payment[<?php echo $setting['setting_key']; ?>]" rows="5" placeholder="请输入<?php echo $setting['setting_name']; ?>"><?php echo htmlspecialchars($setting['setting_value']); ?></textarea>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('<?php echo $setting['setting_key']; ?>')">
+                                        <i class="bi bi-eye" id="<?php echo $setting['setting_key']; ?>_icon"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">请妥善保管密钥信息，不要泄露</small>
+                                <?php else: ?>
+                                <input type="text" class="form-control" id="<?php echo $setting['setting_key']; ?>" name="payment[<?php echo $setting['setting_key']; ?>]" value="<?php echo htmlspecialchars($setting['setting_value']); ?>">
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle"></i> 说明：
+                            <ul class="mb-0">
+                                <li>支付接口地址已固定为：<code>https://pay.kggzs.cn/</code></li>
+                                <li>积分比例：设置1元可以兑换多少积分</li>
+                                <li>平台公钥和商户私钥：从支付平台获取，请妥善保管</li>
+                                <li>商户ID：支付平台分配的商户标识</li>
+                                <li>可用支付方式：用逗号分隔，可选值：<code>alipay</code>（支付宝）、<code>wxpay</code>（微信支付）、<code>qqpay</code>（QQ钱包）、<code>bank</code>（云闪付）</li>
+                                <li>默认支付方式：用户打开充值弹窗时默认选中的支付方式</li>
+                            </ul>
+                        </div>
+                        <?php else: ?>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 未找到支付配置。请确保已导入<code>add_recharge_system.sql</code>文件到数据库。
+                            <div class="mt-2">
+                                <a href="settings.php?reload=1" class="btn btn-sm btn-outline-primary">刷新页面</a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
@@ -489,7 +577,20 @@ function togglePasswordVisibility(inputId) {
     const input = document.getElementById(inputId);
     const icon = document.getElementById(inputId + '_icon');
     
-    if (input.type === 'password') {
+    if (!input || !icon) return;
+    
+    // 如果是textarea，切换显示/隐藏
+    if (input.tagName === 'TEXTAREA') {
+        if (input.style.display === 'none') {
+            input.style.display = 'block';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.style.display = 'none';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    } else if (input.type === 'password') {
         input.type = 'text';
         icon.classList.remove('bi-eye');
         icon.classList.add('bi-eye-slash');

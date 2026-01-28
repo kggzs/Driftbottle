@@ -175,6 +175,12 @@ define('EXP_PER_BOTTLE', (int)getSetting('EXP_PER_BOTTLE', 10));
 define('EXP_PER_PICK', (int)getSetting('EXP_PER_PICK', 5));
 define('EXP_PER_COMMENT', (int)getSetting('EXP_PER_COMMENT', 3));
 
+// 支付配置
+define('PAYMENT_POINTS_RATIO', (float)getSetting('PAYMENT_POINTS_RATIO', 100));
+define('PAYMENT_MERCHANT_ID', getSetting('PAYMENT_MERCHANT_ID', '1000'));
+define('PAYMENT_PLATFORM_PUBLIC_KEY', getSetting('PAYMENT_PLATFORM_PUBLIC_KEY', ''));
+define('PAYMENT_MERCHANT_PRIVATE_KEY', getSetting('PAYMENT_MERCHANT_PRIVATE_KEY', ''));
+
 // 确保会话已启动
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

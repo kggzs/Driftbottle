@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-%3E%3D7.3-8892BF.svg?logo=php)](https://www.php.net/)
 [![MySQL Version](https://img.shields.io/badge/MySQL-%3E%3D5.6-4479A1.svg?logo=mysql)](https://www.mysql.com/)
-[![Version](https://img.shields.io/badge/Version-1.4.0-blue.svg)](https://github.com/kggzs/Driftbottle)
+[![Version](https://img.shields.io/badge/Version-1.5.0-blue.svg)](https://github.com/kggzs/Driftbottle)
 [![Status](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/kggzs/Driftbottle)
 
 [🚀 快速开始](#-安装与部署) • [📖 文档](docs/) • [🐛 问题反馈](https://github.com/kggzs/Driftbottle/issues) • [💬 讨论](https://github.com/kggzs/Driftbottle/discussions)
@@ -30,6 +30,7 @@
 | 响应式布局 | XSS/SQL 注入防护 | 优化数据库查询 | 评论回复系统 |
 | 流畅交互体验 | CSRF 令牌验证 | 缓存机制 | VIP 会员系统 |
 | 个性化设置 | 会话安全保护 | 异步处理 | 用户等级系统 |
+| 移动端优化 | 支付安全验证 | 高效订单处理 | 在线充值系统 |
 
 </div>
 
@@ -43,6 +44,8 @@
 - **📱 响应式设计** - 完美适配桌面端与移动端
 - **🎯 用户成长** - 经验值等级系统，让每一次互动都有意义
 - **💎 会员特权** - VIP 系统提供更多功能与权限
+- **💰 在线充值** - 支持支付宝、微信支付等多种支付方式，便捷充值积分
+- **📊 订单管理** - 完善的订单管理系统，支持订单查询、状态跟踪
 - **🚨 内容审核** - 完善的举报系统，支持屏蔽、删除等操作，维护社区环境
 
 ---
@@ -86,6 +89,8 @@
 - **VIP 会员**：购买 VIP 享受更多特权（如：更多扔/捡瓶次数、专属标识）。
 - **签到系统**：每日签到获取积分，连续签到有额外奖励。
 - **积分系统**：通过多种方式赚取积分，兑换系统特权。
+- **在线充值**：💰 支持支付宝、微信支付、QQ钱包、云闪付等多种支付方式，便捷充值积分。
+- **充值记录**：查看个人充值历史记录，包括订单号、金额、积分、支付方式、状态等信息。
 - **用户等级系统**：🎯 通过发漂流瓶、捡漂流瓶、评论等操作获得经验值，自动升级等级，在个人主页显示等级和经验条。
 - **IP 保护**：VIP 用户 IP 地址完全隐藏，普通用户部分隐藏。
 - **消息中心**：接收系统通知和互动消息，支持点击标记已读。
@@ -102,7 +107,8 @@
 
 - **用户管理**：查看、封禁/解封用户，重置密码，设置用户经验值和等级。
 - **内容管理**：管理漂流瓶、评论，发布公告。
-- **系统设置**：配置基础参数、积分规则、经验值规则、VIP 特权、安全策略、备案信息、版权信息。
+- **订单管理**：💰 查看所有用户的充值订单，支持按状态筛选、搜索订单号/交易号/用户名，查看订单详情。
+- **系统设置**：配置基础参数、积分规则、经验值规则、VIP 特权、支付配置、安全策略、备案信息、版权信息。
 - **数据统计**：监控用户活跃度、漂流瓶数据、系统运行状态。
 
 ## 🛠️ 技术栈
@@ -135,6 +141,7 @@
 | `admin_operation_logs` | 管理员操作日志   |
 | `daily_limits`       | 用户每日限制     |
 | `messages`           | 消息中心         |
+| `recharge_orders`    | 充值订单         |
 | `system_settings`    | 系统配置         |
 
 ## 📦 安装与部署
@@ -248,9 +255,22 @@
 
 6.  **API 调用失败或无响应？**
     - 确认 API 请求格式为 `api.php?action=your_action`。
-    - 打开浏览器开发者工具 (F12)，检查“网络 (Network)”和“控制台 (Console)”选项卡是否有错误信息。
+    - 打开浏览器开发者工具 (F12)，检查"网络 (Network)"和"控制台 (Console)"选项卡是否有错误信息。
     - 检查服务器端的 PHP 或 Web 服务器错误日志。
     - 尝试清除浏览器缓存。
+
+7.  **支付成功后积分没有到账？**
+    - 确认 `payment_notify.php` 文件可以正常访问（支付平台会异步回调此文件）。
+    - 检查服务器日志 (`logs/php_errors.log`)，查看是否有错误信息。
+    - 确认数据库连接正常。
+    - 检查支付配置是否正确（商户ID、公钥、私钥）。
+    - 详细说明请参考 [支付系统使用说明](docs/支付系统使用说明.md)。
+
+8.  **如何配置支付方式？**
+    - 登录后台管理系统，进入 **系统设置 → 支付配置**。
+    - 配置"可用支付方式"：用逗号分隔，如 `alipay,wxpay`。
+    - 配置"默认支付方式"：如 `alipay`。
+    - 详细配置说明请参考 [支付系统使用说明](docs/支付系统使用说明.md)。
 
 ## 🔌 API 接口
 
@@ -279,6 +299,10 @@ POST /api.php?action=endpoint_name (with POST data)
 - `get_basic_settings`: 获取系统基本配置
 - `get_experience_config`: 获取经验值规则配置
 - `get_user_level_info`: 获取用户等级信息
+- `get_payment_config`: 获取支付配置（积分比例、可用支付方式、默认支付方式）
+- `create_recharge_order`: 创建充值订单
+- `get_recharge_orders`: 获取用户充值订单列表
+- `get_recharge_order_detail`: 获取订单详情（后台使用）
 - ... (更多接口请参考 `api.php` 源码)
 
 ## 📁 项目结构
@@ -311,6 +335,10 @@ driftbottle/
 │   ├── validator.php       # 数据验证类
 │   ├── ip_location.php     # IP 定位类
 │   ├── admin.php           # 管理员类
+│   ├── payment/            # 支付相关文件
+│   │   └── lib/
+│   │       ├── epay.config.php    # 支付配置文件
+│   │       └── EpayCore.class.php # 支付核心类
 │   └── ip/                 # IP 数据库存放目录
 ├── ip/                     # (可能冗余) IP 数据库目录
 ├── logs/                   # 日志文件目录
@@ -318,10 +346,13 @@ driftbottle/
 ├── uploads/                # 用户上传文件目录
 │   └── audio/              # 语音文件存储目录
 ├── api.php                 # API 入口文件
+├── payment_notify.php     # 支付异步回调处理
+├── payment_return.php      # 支付同步返回处理
 ├── index.html              # 前台首页
 ├── login.html              # 登录页
 ├── register.html           # 注册页
 ├── profile.html            # 个人资料页
+├── profile_info.html       # 个人信息页（包含充值功能）
 ├── throw.html              # 扔瓶子页
 ├── pick.html               # 捡瓶子页
 ├── driftbottle.sql         # 完整数据库结构
@@ -339,10 +370,57 @@ driftbottle/
 - [故障排除](docs/troubleshooting.md) - 常见问题和解决方案
 - [语音漂流瓶功能](docs/features/voice-bottle.md) - 语音功能使用说明
 - [VIP 会员系统](docs/features/vip-system.md) - VIP 系统功能说明
+- [支付系统使用说明](docs/支付系统使用说明.md) - 支付充值功能配置和使用指南
 - [更新日志](CHANGELOG.md) - 详细的版本更新历史
 
 ## ⏳ 更新历史
 
+- **v1.5.0** (2026-01-28):
+    - 💰 **新增在线充值系统**：
+        - 支持支付宝、微信支付、QQ钱包、云闪付等多种支付方式
+        - 可配置的支付方式显示（后台可控制显示哪些支付方式）
+        - 可配置的积分比例（1元=多少积分）
+        - 可配置的默认支付方式
+        - 用户端充值弹窗，支持移动端优化显示
+        - 充值记录查看功能（用户端和后台管理）
+        - 支付回调处理（异步和同步双重保障）
+        - 订单状态管理（待支付、已支付、已取消、已退款）
+    - 📊 **后台订单管理**：
+        - 查看所有用户的充值订单
+        - 支持按订单状态筛选（待支付、已支付、已取消、已退款）
+        - 支持搜索订单号、交易号、用户名
+        - 订单详情查看（包括回调数据）
+        - 分页显示订单列表
+    - 🎨 **前端优化**：
+        - 充值按钮和充值记录按钮并排显示，不换行
+        - 支付方式按钮选中状态更明显（边框、阴影、缩放效果）
+        - 移动端弹窗优化，支持滚动和居中显示
+        - 充值记录移动端卡片式显示，桌面端表格显示
+    - 🗄️ **数据库更新**：
+        - 新增 `recharge_orders` 表（充值订单表）
+        - 新增支付相关系统配置项：
+            - `PAYMENT_POINTS_RATIO`: 充值积分比例
+            - `PAYMENT_MERCHANT_ID`: 商户ID
+            - `PAYMENT_PLATFORM_PUBLIC_KEY`: 平台公钥
+            - `PAYMENT_MERCHANT_PRIVATE_KEY`: 商户私钥
+            - `PAYMENT_METHODS`: 可用支付方式
+            - `PAYMENT_DEFAULT_METHOD`: 默认支付方式
+    - 📝 **新增文档**：
+        - 支付系统使用说明文档（`docs/支付系统使用说明.md`）
+- **v1.4.0** (2024-12-24):
+    - 🚨 **新增举报系统**：
+        - 用户可举报不当内容（漂流瓶、评论）
+        - 支持举报理由选择（色情、暴力、广告、其他）
+        - 后台管理员可查看和处理举报
+        - 举报成功奖励积分
+    - 🗑️ **软删除功能**：
+        - 漂流瓶和评论支持软删除
+        - 删除后数据保留在数据库中，但前端不显示
+        - 管理员可恢复已删除的内容
+    - 💌 **消息通知系统优化**：
+        - 优化消息显示样式
+        - 支持消息分类显示
+        - 改进消息已读/未读状态管理
 - **v1.3.0** (2024-12-20): 
     - 🔍 **IP地址追踪功能**：
         - 用户注册时自动记录注册IP地址
@@ -414,6 +492,7 @@ driftbottle/
 
 - [x] ~~语音漂流瓶功能~~ ✅ 已实现
 - [x] ~~用户等级与成就系统~~ ✅ 已实现
+- [x] ~~在线充值系统~~ ✅ 已实现
 - [ ] 漂流瓶内容分类/标签系统
 - [ ] 用户间私信功能
 - [ ] 更丰富的用户个性化设置

@@ -841,6 +841,312 @@ switch ($endpoint) {
         ];
         break;
         
+    case 'create_recharge_order':
+        // 创建充值订单
+        if ($requestMethod === 'POST' && isLoggedIn()) {
+            try {
+                // 清除任何可能的输出
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                
+                // 检查必要的文件是否存在
+                $epayConfigFile = __DIR__ . '/includes/payment/lib/epay.config.php';
+                $epayCoreFile = __DIR__ . '/includes/payment/lib/EpayCore.class.php';
+                
+                if (!file_exists($epayConfigFile)) {
+                    throw new Exception('支付配置文件不存在');
+                }
+                if (!file_exists($epayCoreFile)) {
+                    throw new Exception('支付核心类文件不存在');
+                }
+                
+                require_once $epayConfigFile;
+                require_once $epayCoreFile;
+                $amount = isset($data['amount']) ? (float)$data['amount'] : 0;
+                $payment_type = isset($data['payment_type']) ? sanitizeInput($data['payment_type']) : 'alipay';
+                
+                // 验证金额
+                if ($amount <= 0 || $amount > 10000) {
+                    throw new Exception('充值金额必须在0.01-10000元之间');
+                }
+                
+                // 验证支付方式
+                $allowed_types = ['alipay', 'wxpay', 'qqpay', 'bank'];
+                if (!in_array($payment_type, $allowed_types)) {
+                    throw new Exception('不支持的支付方式');
+                }
+                
+                // 获取积分比例
+                if (!function_exists('getPointsRatio')) {
+                    throw new Exception('getPointsRatio函数未定义，请检查支付配置文件');
+                }
+                $points_ratio = getPointsRatio();
+                if ($points_ratio <= 0) {
+                    throw new Exception('积分比例配置错误，请检查后台设置');
+                }
+                $points = (int)($amount * $points_ratio);
+                
+                if ($points <= 0) {
+                    throw new Exception('积分计算错误，请检查积分比例配置');
+                }
+                
+                $user_id = getCurrentUserId();
+                if (!$user_id) {
+                    throw new Exception('用户未登录');
+                }
+                
+                $conn = getDbConnection();
+                if (!$conn) {
+                    throw new Exception('数据库连接失败');
+                }
+                
+                // 检查表是否存在
+                $tableCheck = $conn->query("SHOW TABLES LIKE 'recharge_orders'");
+                if (!$tableCheck || $tableCheck->num_rows == 0) {
+                    $conn->close();
+                    $conn = null; // 标记连接已关闭
+                    throw new Exception('充值订单表不存在，请先执行sql/add_recharge_system.sql文件');
+                }
+                
+                $conn->begin_transaction();
+                $transactionStarted = true;
+                
+                // 生成订单号
+                $order_no = 'R' . date('YmdHis') . mt_rand(1000, 9999) . $user_id;
+                
+                // 创建订单
+                $stmt = $conn->prepare("INSERT INTO recharge_orders (order_no, user_id, amount, points, points_ratio, payment_type, status) VALUES (?, ?, ?, ?, ?, ?, 0)");
+                if (!$stmt) {
+                    throw new Exception('准备SQL语句失败: ' . $conn->error);
+                }
+                $stmt->bind_param("sidiis", $order_no, $user_id, $amount, $points, $points_ratio, $payment_type);
+                if (!$stmt->execute()) {
+                    throw new Exception('创建订单失败: ' . $stmt->error);
+                }
+                $stmt->close();
+                
+                // 获取支付配置
+                if (!function_exists('getPaymentConfig')) {
+                    throw new Exception('getPaymentConfig函数未定义，请检查支付配置文件');
+                }
+                $epay_config = getPaymentConfig();
+                if (empty($epay_config['pid']) || empty($epay_config['platform_public_key']) || empty($epay_config['merchant_private_key'])) {
+                    throw new Exception('支付配置不完整，请在后台系统设置中配置支付参数');
+                }
+                $epay = new EpayCore($epay_config);
+                
+                // 获取网站URL（自动检测，避免配置错误）
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $scriptPath = dirname($_SERVER['SCRIPT_NAME']);
+                $baseUrl = $protocol . $host . ($scriptPath !== '/' ? $scriptPath : '');
+                
+                // 如果SITE_URL配置了且不是默认值，优先使用配置的URL
+                $site_url = SITE_URL;
+                if ($site_url === 'http://localhost' || empty($site_url)) {
+                    $site_url = $baseUrl;
+                }
+                
+                $notify_url = rtrim($site_url, '/') . '/payment_notify.php';
+                $return_url = rtrim($site_url, '/') . '/payment_return.php';
+                
+                // 构建支付参数
+                $pay_params = [
+                    'type' => $payment_type,
+                    'notify_url' => $notify_url,
+                    'return_url' => $return_url,
+                    'out_trade_no' => $order_no,
+                    'name' => '积分充值',
+                    'money' => number_format($amount, 2, '.', '')
+                ];
+                
+                // 生成支付表单
+                $pay_html = $epay->pagePay($pay_params);
+                
+                $conn->commit();
+                $conn->close();
+                
+                // 构建响应数据
+                $response = [
+                    'success' => true,
+                    'order_no' => $order_no,
+                    'amount' => $amount,
+                    'points' => $points,
+                    'pay_html' => $pay_html  // pay_html包含HTML，需要特殊处理
+                ];
+                
+                // 直接输出JSON，不对pay_html进行HTML转义
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                header('Content-Type: application/json; charset=utf-8');
+                
+                // 手动构建JSON，确保pay_html不被转义
+                $jsonData = [
+                    'success' => $response['success'],
+                    'order_no' => htmlspecialchars($response['order_no'], ENT_QUOTES, 'UTF-8'),
+                    'amount' => $response['amount'],
+                    'points' => $response['points'],
+                    'pay_html' => $response['pay_html']  // 不转义HTML
+                ];
+                
+                echo json_encode($jsonData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+                
+            } catch (Exception $e) {
+                // 只有在连接存在且事务已开始时才回滚
+                if (isset($conn) && $conn !== null && isset($transactionStarted) && $transactionStarted) {
+                    try {
+                        if ($conn instanceof mysqli && $conn->ping()) {
+                            $conn->rollback();
+                        }
+                    } catch (Exception $rollbackError) {
+                        error_log("回滚事务失败: " . $rollbackError->getMessage());
+                    }
+                }
+                
+                // 关闭连接（如果还存在且未关闭）
+                if (isset($conn) && $conn !== null) {
+                    try {
+                        if ($conn instanceof mysqli && $conn->ping()) {
+                            $conn->close();
+                        }
+                    } catch (Exception $closeError) {
+                        // 忽略关闭错误
+                    }
+                }
+                
+                error_log("创建充值订单失败: " . $e->getMessage());
+                // 清除任何可能的输出
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                $response = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+            } catch (Error $e) {
+                // 捕获PHP致命错误
+                error_log("创建充值订单PHP错误: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                $response = [
+                    'success' => false,
+                    'message' => '系统错误：' . $e->getMessage()
+                ];
+            }
+        } else {
+            $response = ['success' => false, 'message' => '请先登录'];
+        }
+        break;
+        
+    case 'get_recharge_orders':
+        // 获取充值订单列表（用户自己的订单）
+        if ($requestMethod === 'GET' && isLoggedIn()) {
+            try {
+                $user_id = getCurrentUserId();
+                $conn = getDbConnection();
+                
+                $sql = "SELECT * FROM recharge_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 20";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("i", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                $orders = [];
+                while ($row = $result->fetch_assoc()) {
+                    $orders[] = $row;
+                }
+                
+                $stmt->close();
+                $conn->close();
+                
+                $response = [
+                    'success' => true,
+                    'orders' => $orders
+                ];
+            } catch (Exception $e) {
+                error_log("获取充值订单失败: " . $e->getMessage());
+                $response = [
+                    'success' => false,
+                    'message' => '获取订单失败'
+                ];
+            }
+        } else {
+            $response = ['success' => false, 'message' => '请先登录'];
+        }
+        break;
+        
+    case 'get_recharge_order_detail':
+        // 获取充值订单详情（后台管理员使用）
+        if ($requestMethod === 'GET') {
+            require_once 'includes/admin.php';
+            $admin = new Admin();
+            
+            if (!$admin->isLoggedIn()) {
+                $response = ['success' => false, 'message' => '请先登录'];
+                break;
+            }
+            
+            try {
+                $order_id = isset($data['order_id']) ? (int)$data['order_id'] : 0;
+                
+                if ($order_id <= 0) {
+                    throw new Exception('订单ID无效');
+                }
+                
+                $conn = getDbConnection();
+                $sql = "SELECT ro.*, u.username 
+                        FROM recharge_orders ro 
+                        LEFT JOIN users u ON ro.user_id = u.id 
+                        WHERE ro.id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("i", $order_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $order = $result->fetch_assoc();
+                $stmt->close();
+                $conn->close();
+                
+                if ($order) {
+                    $response = [
+                        'success' => true,
+                        'order' => $order
+                    ];
+                } else {
+                    $response = [
+                        'success' => false,
+                        'message' => '订单不存在'
+                    ];
+                }
+            } catch (Exception $e) {
+                error_log("获取订单详情失败: " . $e->getMessage());
+                $response = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+            }
+        } else {
+            $response = ['success' => false, 'message' => '请求方法不支持'];
+        }
+        break;
+        
+    case 'get_payment_config':
+        // 获取支付配置（积分比例、支付方式等）
+        require_once 'includes/payment/lib/epay.config.php';
+        $points_ratio = getPointsRatio();
+        $available_methods = getAvailablePaymentMethods();
+        $default_method = getDefaultPaymentMethod();
+        $response = [
+            'success' => true,
+            'points_ratio' => $points_ratio,
+            'available_methods' => $available_methods,
+            'default_method' => $default_method
+        ];
+        break;
+        
     case 'get_announcements':
         // 获取公告列表，不需要登录即可访问
         if ($requestMethod === 'GET') {

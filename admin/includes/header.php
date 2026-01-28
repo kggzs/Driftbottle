@@ -202,6 +202,12 @@ ob_start();
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link <?php echo $currentPage == 'recharge_orders.php' ? 'active' : ''; ?>" href="recharge_orders.php">
+                        <i class="fas fa-wallet"></i>
+                        充值订单
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link <?php echo $currentPage == 'settings.php' ? 'active' : ''; ?>" href="settings.php">
                         <i class="bi bi-gear"></i>
                         系统设置
